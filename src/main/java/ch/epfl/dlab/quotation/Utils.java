@@ -5,7 +5,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
@@ -16,6 +19,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
 import ch.epfl.dlab.spinn3r.converter.ProtoToJson;
+import scala.Tuple2;
 
 public class Utils {
 
@@ -160,4 +164,40 @@ public class Utils {
 		return bestMatch;
 	}
 	
+	/**
+	 * Returns the element that appears with the highest frequency,
+	 * along with its count.
+	 * If there are ties, this method returns false.
+	 */
+	public static <T> Tuple2<T, Integer> maxFrequencyItem(Iterable<T> it) {
+		Map<T, Integer> frequencies = new HashMap<>();
+		for (T elem : it) {
+			frequencies.put(elem, frequencies.getOrDefault(elem, 0) + 1);
+		}
+		Map.Entry<T, Integer> best = null;
+		boolean dirty = true; // We want to avoid ties
+		for (Map.Entry<T, Integer> entry : frequencies.entrySet()) {
+			if (best == null || entry.getValue() > best.getValue()) {
+				dirty = false;
+				best = entry;
+			} else if (entry.getValue() == best.getValue()) {
+				dirty = true;
+			}
+		}
+		
+		if (dirty) {
+			return null;
+		} else {
+			return new Tuple2<>(best.getKey(), best.getValue());
+		}
+	}
+	
+	public static int countIterator(Iterator<?> it) {
+		int count = 0;
+		while (it.hasNext()) {
+			it.next();
+			count++;
+		}
+		return count;
+	}
 }

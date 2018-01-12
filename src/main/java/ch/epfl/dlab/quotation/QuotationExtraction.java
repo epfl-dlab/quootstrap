@@ -35,6 +35,11 @@ public class QuotationExtraction {
 
 	public static void main(final String[] args) throws IOException {
 		
+		if (args.length > 0) {
+			// Output path for the evaluation logs
+			ConfigManager.getInstance().setOutputPath(args[0]);
+		}
+		
 		final String namesPath = ConfigManager.getInstance().getNamesPath();
 		final int numIterations = ConfigManager.getInstance().getNumIterations();
 		
@@ -86,8 +91,8 @@ public class QuotationExtraction {
 			// Patterns from previous iterations
 			Set<Pattern> oldPatterns = new HashSet<>(currentPatterns);
 			
-			// Pairs found in all iterations. Pair (quotation, speaker)
-			JavaPairRDD<String, List<Token>> allPairs = JavaPairRDD.fromJavaRDD(sc.emptyRDD());
+			// Pairs found in all iterations. Pair (quotation, (speaker, lineageInfo))
+			JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> allPairs = JavaPairRDD.fromJavaRDD(sc.emptyRDD());
 			
 			NameDatabase db = new NameDatabase(sc, namesPath);
 			Broadcast<NameDatabase> broadcastNames = sc.broadcast(db);
@@ -193,17 +198,17 @@ public class QuotationExtraction {
 						return out;
 					});
 				
-				JavaPairRDD<String, Tuple2<List<Token>, Double>> pairs = matchedPairs
-					.mapToPair(x -> new Tuple2<>(x._1(), new Tuple2<>(x._2(), x._4().getConfidenceMetric()))) // (quotation, (speaker, pattern conf.))
+				JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> pairs = matchedPairs
+					.mapToPair(x -> new Tuple2<>(x._1(), new Tuple3<>(x._2(), x._3(), x._4()))) // (quotation, (speaker, sentence, pattern))
 					.groupByKey()
 					.mapValues(x -> {
 						// (speaker, (aggregated confidence, count))
 						Map<List<Token>, Tuple2<Double, Integer>> s = new HashMap<>();
 						x.forEach(y -> {
-							if (!s.containsKey(y._1)) {
-								s.put(y._1, new Tuple2<>(1.0, 0));
+							if (!s.containsKey(y._1())) {
+								s.put(y._1(), new Tuple2<>(1.0, 0));
 							}
-							s.put(y._1, new Tuple2<>(s.get(y._1)._1 * (1 - y._2), s.get(y._1)._2 + 1));
+							s.put(y._1(), new Tuple2<>(s.get(y._1())._1 * (1 - y._3().getConfidenceMetric()), s.get(y._1())._2 + 1));
 						});
 						
 						List<Token> bestSpeaker = null;
@@ -225,13 +230,24 @@ public class QuotationExtraction {
 						if (dirty) {
 							return null;
 						}
-						return new Tuple2<>(bestSpeaker, 1 - bestConfidence);
+						
+						// Build lineage information for the evaluation
+						final List<Pattern> patterns = new ArrayList<>();
+						final List<Sentence> sentences = new ArrayList<>();
+						final List<Token> chosenSpeaker = bestSpeaker;
+						x.forEach(y -> {
+							if (y._1().equals(chosenSpeaker)) {
+								sentences.add(y._2());
+								patterns.add(y._3());
+							}
+						});
+						
+						return new Tuple2<>(bestSpeaker, new LineageInfo(patterns, sentences, 1 - bestConfidence));
 					})
 					.filter(x -> x._2 != null);
 				
 				// Quotations found in the current iteration. Pair (quotation, speaker)
-				JavaPairRDD<String, List<Token>> foundQuotations = pairs.mapValues(x -> x._1()); // Earlier there was the distinct(), now unnecessary
-				allPairs = allPairs.union(foundQuotations);
+				allPairs = allPairs.union(pairs);
 				
 				if (intermediateEvaluation || (iter == numIterations - 1 && finalEvaluation)) {
 					// Run evaluation on current iteration
@@ -248,9 +264,9 @@ public class QuotationExtraction {
 						.subtractByKey(matchedPairs.mapToPair(x -> new Tuple2<>(x._1(), null)));
 
 				List<Pattern> nextPatternsTmp = remainingSentences.mapToPair(x -> new Tuple2<>(x.getQuotation(), x))
-						.join(foundQuotations)
+						.join(pairs)
 						// (quotation, (pattern, speaker))
-						.map(x -> PatternExtractor.extractPattern(x._2._1, x._1, x._2._2))
+						.map(x -> PatternExtractor.extractPattern(x._2._1, x._1, x._2._2._1))
 						.filter(x -> x != null)
 						.collect();
 				
@@ -272,7 +288,7 @@ public class QuotationExtraction {
 					.mapToPair(x -> {
 						// Give low weight to short quotations (collisions likely) and high weight to long quotations
 						double weight = Math.tanh(0.1 * x._1.length());
-						return new Tuple2<>(x._2._1._1(), new Tuple3<>(StaticRules.matchSpeakerApprox(x._2._1._2(), x._2._2) ? weight : 0, weight, 1));
+						return new Tuple2<>(x._2._1._1(), new Tuple3<>(StaticRules.matchSpeakerApprox(x._2._1._2(), x._2._2._1) ? weight : 0, weight, 1));
 					})
 					.reduceByKey((x, y) -> new Tuple3<>(x._1() + y._1(), x._2() + y._2(), x._3() + y._3()))
 					.filter(x -> x._2._3() >= 5) // At least N extracted pairs

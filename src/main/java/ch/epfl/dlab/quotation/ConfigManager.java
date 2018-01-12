@@ -35,6 +35,8 @@ public final class ConfigManager {
 	
 	private final boolean dumpPatternsEnabled;
 	
+	private String outputPath;
+	
 	private ConfigManager() {
 		final Properties prop = new Properties();
 		try {
@@ -70,6 +72,8 @@ public final class ConfigManager {
 		intermediateEvaluationEnabled = prop.getProperty("ENABLE_INTERMEDIATE_EVALUATION").equals("true");
 		
 		dumpPatternsEnabled = prop.getProperty("DEBUG_DUMP_PATTERNS").equals("true");
+		
+		outputPath = "";
 	}
 	
 	public static ConfigManager getInstance() {
@@ -138,5 +142,13 @@ public final class ConfigManager {
 
 	public int getMergingShingleSize() {
 		return mergingShingleSize;
+	}
+
+	public String getOutputPath() {
+		return outputPath;
+	}
+
+	public void setOutputPath(String outputPath) {
+		this.outputPath = outputPath;
 	}
 }

@@ -31,7 +31,7 @@ public class GroundTruthEvaluator {
 	private final JavaRDD<Sentence> sentences;
 	private final JavaSparkContext sc;
 	
-	private JavaPairRDD<String, List<Token>> transformedRDD;
+	private JavaPairRDD<String, Tuple2<List<Token>, Integer>> transformedRDD;
 	private List<List<Token>> speakers;
 	
 	public GroundTruthEvaluator(JavaSparkContext sc, JavaRDD<Sentence> sentences) {
@@ -49,22 +49,30 @@ public class GroundTruthEvaluator {
 		return rdd.mapToPair(x -> new Tuple2<>(new Tuple2<>(x.uid, x.idx), x.speaker));
 	}
 	
-	public void evaluate(JavaPairRDD<String, List<Token>> testPairs, int iteration) {
+	public void evaluate(JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> testPairs, int iteration) {
 		
 		final List<List<Token>> speakers = getSpeakers();
-		JavaPairRDD<String, List<Token>> matched = testPairs
-				.mapValues(x -> StaticRules.matchSpeakerApprox(x, speakers))
-				.filter(x -> x._2.isPresent())
-				.mapValues(x -> x.get());
+		JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> matched = testPairs
+				.mapValues(x -> new Tuple2<>(StaticRules.matchSpeakerApprox(x._1, speakers), x._2))
+				.filter(x -> x._2._1.isPresent())
+				.mapValues(x -> new Tuple2<>(x._1.get(), x._2));
 		
-		JavaPairRDD<String, Tuple2<Optional<List<Token>>, Optional<List<Token>>>> joinedRDD = getTransformedRDD()
+		// This is a necessary evil
+		JavaPairRDD<String, Tuple2<Optional<Tuple2<List<Token>, Integer>>, Optional<Tuple2<List<Token>, LineageInfo>>>> joinedRDD = getTransformedRDD()
 			.fullOuterJoin(matched);
 		
 		JavaRDD<String> errors = joinedRDD.map(x -> {
-				Optional<List<Token>> speakerReal = x._2._1;
-				Optional<List<Token>> speakerPredicted = x._2._2;
+			Optional<List<Token>> speakerReal = x._2._1.isPresent() ? Optional.of(x._2._1.get()._1) : Optional.absent();
+				Optional<List<Token>> speakerPredicted = x._2._2.isPresent() ? Optional.of(x._2._2.get()._1) : Optional.absent();
 				if (!speakerReal.equals(speakerPredicted)) {
-					return "Expected " + speakerReal + "; Got " + speakerPredicted + "; " + x._1;
+					String strRet = "Expected " + speakerReal + "; Got " + speakerPredicted + "; " + x._1;
+					if (speakerReal.isPresent()) {
+						strRet = strRet + "; Redundancy: " + x._2._1.get()._2;
+					}
+					if (speakerPredicted.isPresent()) {
+						strRet = strRet + "; Lineage: " + x._2._2.get()._2();
+					}
+					return strRet;
 				}
 				return null;
 			})
@@ -78,9 +86,8 @@ public class GroundTruthEvaluator {
 		final Accumulator<Integer> labeledWrong = sc.intAccumulator(0);
 		
 		JavaPairRDD<List<Token>, Tuple3<Integer, Integer, Integer>> partialResult = joinedRDD.mapToPair(x -> {
-				// TODO: restrict match to at least 2 tokens and extend name in the other article
-				Optional<List<Token>> speakerReal = x._2._1;
-				Optional<List<Token>> speakerPredicted = x._2._2;
+				Optional<List<Token>> speakerReal = x._2._1.isPresent() ? Optional.of(x._2._1.get()._1) : Optional.absent();
+				Optional<List<Token>> speakerPredicted = x._2._2.isPresent() ? Optional.of(x._2._2.get()._1) : Optional.absent();
 				// Speaker, relevant documents, retrieved documents, relevant ^ retrieved documents
 				if (!speakerReal.isPresent()) {
 					// False positive (quotation incorrectly attributed to the speaker)
@@ -111,6 +118,30 @@ public class GroundTruthEvaluator {
 		Tuple3<Integer, Integer, Integer> aggregateResults = partialResult.map(x -> x._2)
 			.reduce((x, y) -> new Tuple3<>(x._1() + y._1(), x._2() + y._2(), x._3() + y._3()));
 		
+		JavaPairRDD<Integer, Tuple2<Integer, Integer>> recallByFrequency = joinedRDD.mapToPair(x -> {
+				Optional<List<Token>> speakerReal = x._2._1.isPresent() ? Optional.of(x._2._1.get()._1) : Optional.absent();
+				Optional<List<Token>> speakerPredicted = x._2._2.isPresent() ? Optional.of(x._2._2.get()._1) : Optional.absent();
+				// Speaker, relevant documents, relevant ^ retrieved documents
+				if (!speakerReal.isPresent()) {
+					// False positive (quotation incorrectly attributed to the speaker)
+					return null;
+				}
+				if (!speakerPredicted.isPresent()) {
+					// False negative (quotation not attributed)
+					return new Tuple2<>(x._2._1.get()._2, new Tuple2<>(1, 0));
+				}
+				if (speakerReal.get().equals(speakerPredicted.get())) {
+					// True positive (quotation attributed to the right speaker)
+					return new Tuple2<>(x._2._1.get()._2, new Tuple2<>(1, 1));
+				} else {
+					// False positive (quotation attributed to the wrong speaker)
+					return null;
+				}
+			})
+			.filter(x -> x != null)
+			.reduceByKey((x, y) -> new Tuple2<>(x._1() + y._1(), x._2() + y._2()))
+			.sortByKey();
+		
 		try {
 			String fileName = "evaluation" + iteration + ".txt";
 			FileUtils.deleteQuietly(new File(fileName));
@@ -133,10 +164,19 @@ public class GroundTruthEvaluator {
 			outFile.write("F0.5 score: " + f + "\n");
 			outFile.write("F1 score: " + f1 + "\n");
 			outFile.write("-----------------\n");
+			outFile.write("Unique valid quotations in ground truth: " + getTransformedRDD().count() + "\n");
 			outFile.write("Attributed and labeled correctly: " + labeledCorrectly.value() + "\n");
 			outFile.write("Not attributed: " + unlabeled.value() + "\n");
 			outFile.write("Attributed to the wrong person: " + labeledWrong.value() + "\n");
 			outFile.write("Attributed incorrectly: " + labeledIncorrectly.value() + "\n");
+			outFile.write("-----------------\n");
+			outFile.write("frequency\tnum_quotations\trecall\n");
+			recallByFrequency.collect().forEach(x -> {
+				try {
+					outFile.write(x._1() + "\t" + x._2()._1() + "\t" + checkNan((double)x._2()._2()/x._2()._1()) + "\n");
+				} catch (IOException e) {
+				}
+			});
 			outFile.close();
 		} catch (IOException e) {
 		}
@@ -161,17 +201,18 @@ public class GroundTruthEvaluator {
 		return speakers = new ArrayList<>(rdd.map(x -> x.speaker).distinct().collect());
 	}
 	
-	public JavaPairRDD<String, List<Token>> getTransformedRDD() { //TODO: set private again
+	private JavaPairRDD<String, Tuple2<List<Token>, Integer>> getTransformedRDD() {
 		if (transformedRDD != null) {
 			return transformedRDD;
 		}
 		
-		JavaPairRDD<String, List<Token>> data = sentences
+		// Quotation, (speaker, number of occurrences)
+		JavaPairRDD<String, Tuple2<List<Token>, Integer>> data = sentences
 				.mapToPair(x -> new Tuple2<>(x.getKey(), x.getQuotation()))
 				.rightOuterJoin(getPairRDD()) // (uid, idx), (quotation, speaker)
 				.mapToPair(x -> new Tuple2<>(x._2._1.get(), x._2._2)) // An exception here indicates that the ground truth does not match the dataset
 				.groupByKey()
-				.mapToPair(x -> new Tuple2<>(x._1, StaticRules.majority(x._2)))
+				.mapToPair(x -> new Tuple2<>(x._1, Utils.maxFrequencyItem(x._2)))
 				.filter(x -> x._2 != null)
 				.coalesce(1);
 		
@@ -184,7 +225,11 @@ public class GroundTruthEvaluator {
 			suffix = "merged-" + suffix;
 		}
 		
-		return transformedRDD = Utils.loadCache(data, "groundtruth-" + suffix);
+		
+		
+		transformedRDD = Utils.loadCache(data, "groundtruth-" + suffix);
+		Utils.dumpRDDLocal(transformedRDD.map(x -> x), "groundTruthDump.txt");
+		return transformedRDD;
 	}
 	
 	public void dumpGroundTruth() {
