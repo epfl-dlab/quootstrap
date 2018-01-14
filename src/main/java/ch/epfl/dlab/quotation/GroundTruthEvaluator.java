@@ -143,7 +143,7 @@ public class GroundTruthEvaluator {
 			.sortByKey();
 		
 		try {
-			String fileName = "evaluation" + iteration + ".txt";
+			String fileName = ConfigManager.getInstance().getOutputPath() + "evaluation" + iteration + ".txt";
 			FileUtils.deleteQuietly(new File(fileName));
 			OutputStreamWriter outFile = new OutputStreamWriter(new FileOutputStream(fileName));
 			outFile.write("speaker\tprecision\trecall\tnum_extracted\n");

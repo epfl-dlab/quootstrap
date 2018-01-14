@@ -147,6 +147,10 @@ public final class Pattern implements Serializable, Iterable<Token>, Comparable<
 	
 	@Override
 	public String toString() {
+		return toString(true);
+	}
+	
+	public String toString(boolean addConfidence) {
 		StringBuilder str = new StringBuilder();
 		Iterator<Token> it = tokens.iterator();
 		while (it.hasNext()) {
@@ -171,10 +175,10 @@ public final class Pattern implements Serializable, Iterable<Token>, Comparable<
 		}
 		
 		String output = str.toString();
-		if (confidenceMetric >= 0) {
+		if (addConfidence && confidenceMetric >= 0) {
 			output = "[\"" + output + "\": " + confidenceMetric + "]";
 		}
-		return output;
+		return output;		
 	}
 
 	@Override

@@ -23,6 +23,15 @@ import scala.Tuple2;
 
 public class Utils {
 
+	/**
+	 * Load or generate a cached RDD.
+	 * If caching is disabled, the RDD is saved and returned as-is.
+	 * If caching is enabled, the RDD is loaded from disk if it is already cached,
+	 * otherwise it is generated, saved, and returned.
+	 * @param rdd the rdd to cache
+	 * @param fileName the file name of the cache file
+	 * @return the output RDD (cached or generated)
+	 */
 	public static <T> JavaRDD<T> loadCache(JavaRDD<T> rdd, String fileName) {
 		if (!ConfigManager.getInstance().isCacheEnabled()) {
 			return rdd;
@@ -42,7 +51,15 @@ public class Utils {
 
 	}
 	
-	
+	/**
+	 * Load or generate a cached PairRDD.
+	 * If caching is disabled, the RDD is saved and returned as-is.
+	 * If caching is enabled, the RDD is loaded from disk if it is already cached,
+	 * otherwise it is generated, saved, and returned.
+	 * @param rdd the rdd to cache
+	 * @param fileName the file name of the cache file
+	 * @return the output RDD (cached or generated)
+	 */
 	public static <T, U> JavaPairRDD<T, U> loadCache(JavaPairRDD<T, U> rdd, String fileName) {
 		if (!ConfigManager.getInstance().isCacheEnabled()) {
 			return rdd;
@@ -62,6 +79,10 @@ public class Utils {
 	}
 	
 	public static <T> void dumpRDD(JavaRDD<T> rdd, String fileName) {
+		if (!ConfigManager.getInstance().isLocalModeEnabled()) {
+			throw new IllegalArgumentException("The method dumpRDD can be used only in local mode");
+		}
+		fileName = ConfigManager.getInstance().getOutputPath() + fileName;
 		FileUtils.deleteQuietly(new File(fileName));
 		rdd.saveAsTextFile(fileName);
 		try {
@@ -72,6 +93,7 @@ public class Utils {
 	}
 	
 	public static <T> void dumpRDDLocal(JavaRDD<T> rdd, String fileName) {
+		fileName = ConfigManager.getInstance().getOutputPath() + fileName;
 		FileUtils.deleteQuietly(new File(fileName));
 		List<String> lines = rdd.collect()
 			.stream()
@@ -85,6 +107,7 @@ public class Utils {
 	}
 	
 	public static <T> void dumpCollection(Collection<T> data, String fileName) {
+		fileName = ConfigManager.getInstance().getOutputPath() + fileName;
 		List<String> lines = data.stream()
 			.map(x -> x.toString())
 			.sorted()
@@ -98,6 +121,9 @@ public class Utils {
 	}
 	
 	public static <T, U> void dumpRDD(JavaPairRDD<T, U> rdd, String fileName) {
+		if (!ConfigManager.getInstance().isLocalModeEnabled()) {
+			throw new IllegalArgumentException("The method dumpRDD can be used only in local mode");
+		}
 		FileUtils.deleteQuietly(new File(fileName));
 		rdd.saveAsTextFile(fileName);
 		try {

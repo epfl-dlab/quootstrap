@@ -18,6 +18,11 @@ public final class ConfigManager {
 	private final int numIterations;
 	private final List<String> langFilter;
 	
+	private final String newsDatasetLoader;
+	
+	private final boolean exportEnabled;
+	private final String exportPath;
+	
 	private final boolean localModeEnabled;
 	
 	private final double confidenceThreshold;
@@ -50,6 +55,11 @@ public final class ConfigManager {
 		numIterations = Integer.parseInt(
 				prop.getProperty("NUM_ITERATIONS"));
 		langFilter = Arrays.asList(prop.getProperty("LANGUAGE_FILTER").split("\\|"));
+		
+		newsDatasetLoader = prop.getProperty("NEWS_DATASET_LOADER");
+		
+		exportEnabled = prop.getProperty("EXPORT_RESULTS").equals("true");
+		exportPath = prop.getProperty("EXPORT_PATH");
 		
 		localModeEnabled = prop.getProperty("LOCAL_MODE").equals("true");
 		
@@ -150,5 +160,17 @@ public final class ConfigManager {
 
 	public void setOutputPath(String outputPath) {
 		this.outputPath = outputPath;
+	}
+
+	public boolean isExportEnabled() {
+		return exportEnabled;
+	}
+
+	public String getExportPath() {
+		return exportPath;
+	}
+
+	public String getNewsDatasetLoader() {
+		return newsDatasetLoader;
 	}
 }

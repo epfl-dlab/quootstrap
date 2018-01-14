@@ -1,5 +1,6 @@
 package ch.epfl.dlab.quotation;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -37,7 +38,8 @@ public class QuotationExtraction {
 		
 		if (args.length > 0) {
 			// Output path for the evaluation logs
-			ConfigManager.getInstance().setOutputPath(args[0]);
+			new File(args[0]).mkdirs();
+			ConfigManager.getInstance().setOutputPath(args[0] + "/");
 		}
 		
 		final String namesPath = ConfigManager.getInstance().getNamesPath();
@@ -48,7 +50,7 @@ public class QuotationExtraction {
 		final boolean finalEvaluation = ConfigManager.getInstance().isFinalEvaluationEnabled();
 		final boolean intermediateEvaluation = ConfigManager.getInstance().isIntermediateEvaluationEnabled();
 		
-		// Use Kryo serializer and register most used classes to improve performance
+		// Use Kryo serializer and register most frequently used classes to improve performance
 		final SparkConf conf = new SparkConf()
 				.setAppName("QuotationExtraction")
 				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -64,9 +66,6 @@ public class QuotationExtraction {
 		Stopwatch sw = new Stopwatch();
 		
 		try (JavaSparkContext sc = new JavaSparkContext(conf)) {
-
-			//analyzeLanguages(sc, datasetPath);
-			//System.exit(0);
 			
 			// (sentences, deduplicated sentences)
 			Tuple2<JavaRDD<Sentence>, JavaRDD<Sentence>> allSentencesPair = loadSentences(sc, true,
@@ -256,6 +255,12 @@ public class QuotationExtraction {
 				}
 				if (iter == numIterations - 1) {
 					// Last iteration reached -> stop
+					
+					// Save results if requested
+					if (ConfigManager.getInstance().isExportEnabled()) {
+						Exporter exporter = new Exporter(sc, allSentences, db);
+						exporter.exportResults(allPairs);
+					}
 					break;
 				}
 				
@@ -354,18 +359,34 @@ public class QuotationExtraction {
 		return new ArrayList<>(newPatterns);
 	}
 	
+	/**
+	 * Returns the dataset loader specified in the configuration.
+	 */
+	public static DatasetLoader getConcreteDatasetLoader() {
+		String className = ConfigManager.getInstance().getNewsDatasetLoader();
+		
+		try {
+			return (DatasetLoader) Class.forName(className).newInstance();
+		} catch (ClassNotFoundException e) {
+			throw new IllegalArgumentException("Unable to find the dataset loader class " + className, e);
+		} catch (InstantiationException | IllegalAccessException e) {
+			throw new IllegalArgumentException("Unable to instantiate the dataset loader class " + className, e);
+		}
+	}
+	
+	/**
+	 * Returns all sentences (i.e. contexts) in the dataset.
+	 * @param sc the SparkContext
+	 * @param postProcess enable post-processing
+	 * @param merge merge quotations
+	 * @return a pair whose first element contain all sentences (with duplicates), and whose second element contains deduplicated sentences
+	 */
 	public static Tuple2<JavaRDD<Sentence>, JavaRDD<Sentence>> loadSentences(JavaSparkContext sc, boolean postProcess, boolean merge) {
 		Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
-		JavaRDD<Sentence> allSentences = sc.textFile(ConfigManager.getInstance().getDatasetPath())
-			.flatMap(x -> {
-				PermalinkEntryWrapper e = new Gson().fromJson(x, EntryWrapper.class).getPermalinkEntry();
-				if (langSet.contains(e.getLanguage())) {
-					return ContextExtractor.extractQuotations(e.getContent(), Long.parseLong(e.getIdentifier()));
-				} else {
-					return Collections.emptyList();
-				}
-			});
-		
+		JavaRDD<Sentence> allSentences = getConcreteDatasetLoader().loadArticles(sc,
+				ConfigManager.getInstance().getDatasetPath(), langSet)
+			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()));
+			
 		if (postProcess) {
 			allSentences = allSentences.map(ContextExtractor::postProcess);
 			
@@ -463,7 +484,7 @@ public class QuotationExtraction {
 				}
 				return output;
 			})
-			.reduceByKey((x, y) -> x.getLength() > y.getLength() ? x : y);
+			.reduceByKey((x, y) -> x.compareTo(y) == 1 ? x : y);
 		
 		return sentences.mapToPair(x -> new Tuple2<>(new Hashed(x.getQuotation()), x))
 			.leftOuterJoin(remap)
