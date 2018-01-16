@@ -15,7 +15,7 @@ public class NameDatabase implements Serializable {
 	private static final long serialVersionUID = 4372945856241816022L;
 	
 	private final HashTrie trie;
-	private JavaPairRDD<List<String>, String> peopleRDD; // Maps full name to its Freebase ID
+	private transient JavaPairRDD<List<String>, String> peopleRDD; // Maps full name to its Freebase ID
 	
 	public NameDatabase(JavaSparkContext sc, String knowledgeFile) {
 		List<List<String>> names = getNamesRDD(sc, knowledgeFile).collect();
