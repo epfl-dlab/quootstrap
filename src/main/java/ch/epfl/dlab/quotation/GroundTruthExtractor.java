@@ -140,7 +140,7 @@ public class GroundTruthExtractor {
 			finalPeople = Utils.loadCache(finalPeople, "finalPeople");
 			
 			Broadcast<HashTrie> broadcastTrie = sc.broadcast(new HashTrie(tokens.collect()));
-			JavaRDD<Sentence> quotations = QuotationExtraction.loadSentences(sc, false, false)._2;
+			JavaRDD<Sentence> quotations = QuotationExtraction.loadSentences(sc, false, false);
 			JavaRDD<Tuple3<Sentence, List<String>, List<String>>> pairs = quotations.mapPartitionsToPair(it -> {
 					List<Tuple2<List<String>, Sentence>> results = new ArrayList<>();
 					HashTriePatternMatcher pm = new HashTriePatternMatcher(broadcastTrie.value());

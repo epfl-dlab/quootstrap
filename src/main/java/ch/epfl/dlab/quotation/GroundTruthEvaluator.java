@@ -209,8 +209,8 @@ public class GroundTruthEvaluator {
 		// Quotation, (speaker, number of occurrences)
 		JavaPairRDD<String, Tuple2<List<Token>, Integer>> data = sentences
 				.mapToPair(x -> new Tuple2<>(x.getKey(), x.getQuotation()))
-				.rightOuterJoin(getPairRDD()) // (uid, idx), (quotation, speaker)
-				.mapToPair(x -> new Tuple2<>(x._2._1.get(), x._2._2)) // An exception here indicates that the ground truth does not match the dataset
+				.join(getPairRDD()) // (uid, idx), (quotation, speaker)
+				.mapToPair(x -> new Tuple2<>(x._2._1, x._2._2))
 				.groupByKey()
 				.mapToPair(x -> new Tuple2<>(x._1, Utils.maxFrequencyItem(x._2)))
 				.filter(x -> x._2 != null)
@@ -236,7 +236,7 @@ public class GroundTruthEvaluator {
 		Utils.dumpRDD(sentences
 				.mapToPair(x -> new Tuple2<>(x.getKey(), new Tuple2<>(x.getQuotation(), x)))
 				.join(getPairRDD()) // (uid, idx), (quotation, speaker)
-				.mapToPair(x -> new Tuple2<>(x._2._1._1, new Tuple2<>(x._2._2, x._2._1._2))),
+				.mapToPair(x -> new Tuple2<>(x._2._1._1, new Tuple3<>(x._2._2, x._2._1._2, x._2._1._2.getKey()))),
 						"ground_truth_dump.txt");
 	}
 	

@@ -32,5 +32,11 @@ public interface DatasetLoader {
 		/** Get the content of this article in tokenized format. */
 		List<String> getArticleContent();
 		
+		/** Get the domain name in which this article was found. */
+		String getWebsite();
+		
+		/** Get the date of this article. */
+		String getDate();
+		
 	}
 }
