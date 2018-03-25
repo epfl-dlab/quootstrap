@@ -6,7 +6,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -132,18 +131,6 @@ public class Utils {
 			throw new IllegalStateException(e);
 		}
 	}
-
-	
-	public static <T> List<T> findLongestSuperstring(T needle, Iterable<List<T>> haystack) {
-		List<T> bestMatch = null;
-		for (List<T> candidate : haystack) {
-			if (candidate.size() > 1 && candidate.contains(needle)
-					&& (bestMatch == null || candidate.size() > bestMatch.size())) {
-				bestMatch = candidate;
-			}
-		}
-		return bestMatch;
-	}
 	
 	public static <T> List<T> findLongestSuperstring(List<T> needle, Iterable<List<T>> haystack) {
 		List<T> bestMatch = null;
@@ -216,14 +203,5 @@ public class Utils {
 		} else {
 			return new Tuple2<>(best.getKey(), best.getValue());
 		}
-	}
-	
-	public static int countIterator(Iterator<?> it) {
-		int count = 0;
-		while (it.hasNext()) {
-			it.next();
-			count++;
-		}
-		return count;
 	}
 }

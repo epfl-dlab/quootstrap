@@ -2,7 +2,6 @@ package ch.epfl.dlab.quotation;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -22,12 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 import ch.epfl.dlab.quotation.Dawg.Node;
-import ch.epfl.dlab.spinn3r.EntryWrapper;
-import ch.epfl.dlab.spinn3r.EntryWrapper.PermalinkEntryWrapper;
 import ch.epfl.dlab.spinn3r.converter.IteratorWrapper;
 import ch.epfl.dlab.spinn3r.converter.Stopwatch;
 import scala.Tuple2;
@@ -420,115 +414,6 @@ public class QuotationExtraction {
 			}
 		}
 		return deduplicatedSentences;
-	}
-	
-	public static void analyzeLanguages(JavaSparkContext sc, String filename) {
-		JavaRDD<String> languages = sc.textFile(filename)
-				.mapToPair(x -> {
-					PermalinkEntryWrapper e = new Gson().fromJson(x, EntryWrapper.class).getPermalinkEntry();
-					return new Tuple2<>(e.getLanguage(), 1);
-				})
-				.reduceByKey((x, y) -> x + y)
-				.mapToPair(Tuple2::swap)
-				.sortByKey(false)
-				.mapToPair(Tuple2::swap)
-				.map(x -> x.toString());
-		
-		Utils.dumpRDDLocal(languages, "langDistribution.txt");
-	}
-	
-	public static void analyzeWebsites(JavaSparkContext sc, String filename) {
-		Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
-		JavaRDD<String> languages = sc.textFile(filename)
-				.map(x -> new Gson().fromJson(x, EntryWrapper.class).getPermalinkEntry())
-				.filter(x -> langSet.contains(x.getLanguage()))
-				.mapToPair(e -> {
-					final URL url = new URL(e.getUrl());
-				    final String host = url.getHost();
-					return new Tuple2<>(host, 1);
-				})
-				.reduceByKey((x, y) -> x + y)
-				.mapToPair(Tuple2::swap)
-				.sortByKey(false)
-				.mapToPair(Tuple2::swap)
-				.map(x -> x.toString());
-		
-		Utils.dumpRDDLocal(languages, "siteDistribution" + ConfigManager.getInstance().getLangSuffix() + ".txt");
-	}
-	
-	public static void fixGroundTruth(JavaSparkContext sc) {
-		
-		final Map<Tuple2<Long, Integer>, List<Token>> idsPairs = new HashMap<>(new GroundTruthEvaluator(sc, sc.emptyRDD()).getPairRDD()
-				.distinct()
-				.collectAsMap());
-		
-		Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
-		JavaRDD<String> newGt = getConcreteDatasetLoader().loadArticles(sc,
-				ConfigManager.getInstance().getDatasetPath(), langSet)
-			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()))
-			.map(x -> ContextExtractor.postProcess(x))
-			.mapToPair(x -> new Tuple2<>(x, x.getKey()))
-			.groupByKey()
-			.flatMapToPair(it -> {
-				List<Token> speaker = null;
-				for (Tuple2<Long, Integer> k : it._2) {
-					speaker = idsPairs.get(k);
-					if (speaker != null) {
-						break;
-					}
-				}
-				if (speaker == null) {
-					return Collections.emptyList();
-				} else {
-					List<Tuple2<Tuple2<Long, Integer>, List<Token>>> newSpeakers = new ArrayList<>();
-					for (Tuple2<Long, Integer> k : it._2) {
-						newSpeakers.add(new Tuple2<>(k, speaker));
-					}
-					return newSpeakers;
-				}
-			})
-			.map(x -> {
-				JsonObject o = new JsonObject();
-				o.addProperty("uid", Long.toString(x._1._1));
-				o.addProperty("idx", x._1._2);
-				o.addProperty("sa", String.join(" ", Token.getStrings(x._2)));
-				return new Gson().toJson(o);
-			});
-		
-		Utils.dumpRDD(newGt, "newGroundTruth2.json");
-			
-	}
-	
-	public static void checkGroundTruth(JavaSparkContext sc) {
-
-		final Map<Tuple2<Long, Integer>, List<Token>> idsPairs = new HashMap<>(new GroundTruthEvaluator(sc, sc.emptyRDD()).getPairRDD()
-				.distinct()
-				.collectAsMap());
-		
-		final Set<Long> ids = new HashSet<>(new GroundTruthEvaluator(sc, sc.emptyRDD()).getPairRDD()
-				.map(x -> x._1._1)
-				.distinct()
-				.collect());
-		
-		Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
-		getConcreteDatasetLoader().loadArticles(sc,
-				ConfigManager.getInstance().getDatasetPath(), langSet)
-			.filter(x -> ids.contains(x.getArticleUID()))
-			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()))
-			.filter(x -> idsPairs.containsKey(x.getKey()))
-			.map(x -> ContextExtractor.postProcess(x))
-			.mapToPair(x -> new Tuple2<>(x, x))
-			.reduceByKey((x, y) -> {
-				if (!idsPairs.get(x.getKey()).equals(idsPairs.get(y.getKey()))) {
-					throw new IllegalArgumentException();
-				}
-				return x;
-			})
-			.foreach(x -> {
-				
-			});
-		
-		System.out.println("Checked");
 	}
 	
 	public static List<Pattern> loadPatterns(String fileName) {

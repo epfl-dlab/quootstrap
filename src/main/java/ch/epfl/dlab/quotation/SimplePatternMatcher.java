@@ -23,10 +23,7 @@ public class SimplePatternMatcher extends PatternMatcher {
 	@Override
 	public boolean match(Sentence s) {
 		sentenceTokens = s.getTokens();
-		
-		// TODO: important: sentence outer, pattern inner (investigate side effects)
-		// TODO: multiple matches? avoid stopping
-		
+
 		matches.clear();
 		boolean result = false;
 		for (int i = 0; i < sentenceTokens.size(); i++) {
@@ -34,10 +31,6 @@ public class SimplePatternMatcher extends PatternMatcher {
 				this.currentPattern = currentPattern;
 				patternTokens = currentPattern.getTokens();
 				
-				//speakerTokenFoundFlag = false;
-				//quotationTokenFoundFlag = false;
-				//matchedQuotation.clear();
-				//matchedSpeaker.clear();
 				if (matchImpl(0, i, maxSpeakerLength)) {
 					result = true;
 				}

@@ -240,17 +240,6 @@ public class GroundTruthEvaluator {
 						"ground_truth_dump.txt");
 	}
 	
-	public void checkCompatibility() {
-		sentences
-			.mapToPair(x -> new Tuple2<>(x.getKey(), x.getQuotation()))
-			.rightOuterJoin(getPairRDD())
-			.foreach(x -> {
-				if (!x._2._1.isPresent()) {
-					throw new IllegalArgumentException("Incompatible ground truth: mismatch at " + x._1);
-				}
-			});
-	}
-	
 	public static class Record implements Serializable {
 		private static final long serialVersionUID = -1661736647814546848L;
 		

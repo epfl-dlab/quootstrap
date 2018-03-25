@@ -219,10 +219,4 @@ public class ContextExtractor {
 		return new Sentence(tokens, s.getArticleUid(), s.getIndex());
 	}
 	
-	public static Sentence removeHtmlTags(Sentence s) {
-		List<Token> tokens = new ArrayList<>(s.getTokens());
-		tokens.removeIf(x -> StaticRules.isHtmlTag(x.toString()));
-		return new Sentence(tokens, s.getArticleUid(), s.getIndex());
-	}
-	
 }
