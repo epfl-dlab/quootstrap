@@ -24,6 +24,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import ch.epfl.dlab.spinn3r.EntryWrapper;
+import scala.Tuple2;
 
 public class ProtoToJson {
 	
@@ -41,6 +42,7 @@ public class ProtoToJson {
 			System.err.println("[--source-type=<type(s)>] specifies the source type(s) to extract (e.g. MAINSTREAM_NEWS). Separate with ;");
 			System.err.println("[--clean=<true/false>] clean useless HTML tags (default: true)");
 			System.err.println("[--tokenize=<true/false>] tokenize the output using Stanford PTBTokenizer (default: true)");
+			System.err.println("[--remove-duplicates] try to remove articles with duplicate contents (costly operation)");
 			System.err.println("Examples:");
 			System.err.println("ProtoToJson dir/*.tar.gz out.json --master=local[*] --sample=0.1 --merge");
 			System.err.println("ProtoToJson dir/*.tar.gz out.json --master=local[*] --partitions=1000 --compress=GzipCodec --source-type=MAINSTREAM_NEWS;FORUM");
@@ -49,7 +51,10 @@ public class ProtoToJson {
 		
 		final SparkConf conf = new SparkConf()
 				.setAppName(ProtoToJson.class.getName())
-				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer");
+				.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+				.registerKryoClasses(new Class<?>[] { EntryWrapper.class, EntryWrapper.PermalinkEntryWrapper.class,
+					EntryWrapper.FeedEntryWrapper.class, EntryWrapper.FeedWrapper.class, EntryWrapper.SourceWrapper.class, ArrayList.class,
+					List.class });
 
 		
 		double samplingRate = 1.0;
@@ -59,6 +64,7 @@ public class ProtoToJson {
 		final List<String> allowedSources = new ArrayList<>();
 		boolean clean = true;
 		boolean tokenize = true;
+		boolean removeDuplicates = false;
 		for (int i = 2; i < args.length; i++) {
 			String[] arg = args[i].split("=");
 			switch (arg[0]) {
@@ -85,6 +91,9 @@ public class ProtoToJson {
 				break;
 			case "--tokenize":
 				tokenize = Boolean.parseBoolean(arg[1]);
+				break;
+			case "--remove-duplicates":
+				removeDuplicates = true;
 				break;
 			}
 		}
@@ -117,6 +126,17 @@ public class ProtoToJson {
 			
 			if (numPartitions > 0) {
 				rdd = rdd.repartition(numPartitions);
+			}
+			
+			if (removeDuplicates) {
+				rdd = rdd.mapToPair(x -> new Tuple2<>(x.getPermalinkEntry().getContent(), x))
+						.reduceByKey((x, y) -> {
+							// Deterministic "distinct": return the article with the lowest ID
+							long id1 = Long.parseLong(x.getPermalinkEntry().getIdentifier());
+							long id2 = Long.parseLong(y.getPermalinkEntry().getIdentifier());
+							return id1 < id2 ? x : y;
+						})
+						.map(x -> x._2);
 			}
 			
 			JavaRDD<String> out = rdd.map(x -> {
