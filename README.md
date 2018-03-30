@@ -1,12 +1,12 @@
 # Quootstrap
 This is the reference implementation of Quootstrap, as described in the paper:
-> Dario Pavllo, Tiziano Piccardi, Robert West. *Quootstrap: Scalable Unsupervised Extraction of Quotation--Speaker Pairs from Large News Corpora via Bootstrapping*. In [ICWSM-18](http://www.icwsm.org/2018/index.php).
+> Dario Pavllo, Tiziano Piccardi, Robert West. *Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping*. In [ICWSM-18](http://www.icwsm.org/2018/index.php).
 
 #### Abstract
-We propose Quootstrap, a method for extracting quotations, as well as the names of the speakers who uttered them, from large news corpora. Whereas prior work has addressed this problem primarily with supervised machine learning, our approach follows a bootstrapping paradigm and is therefore fully unsupervised. It leverages the redundancy present in large news corpora, more precisely, the fact that the same quotation often appears across multiple news articles in slightly different contexts. Starting from a few seed patterns, such as ["Q", said S.], our method extracts a set of quotation--speaker pairs (Q,S), which are then used for discovering new patterns expressing the same quotations; the process is then repeated with the larger pattern set. Our algorithm is highly scalable, which we demonstrate by running it on the large ICWSM 2011 Spinn3r corpus. Validating our results against a crowdsourced ground truth, we obtain 90% precision at 40% recall using a single seed pattern, with significantly higher recall values for more frequently reported (and thus likely more interesting) quotations. Finally, we showcase the usefulness of our algorithm's output for computational social science by analyzing the sentiment expressed in our extracted quotations.
+We propose Quootstrap, a method for extracting quotations, as well as the names of the speakers who uttered them, from large news corpora. Whereas prior work has addressed this problem primarily with supervised machine learning, our approach follows a bootstrapping paradigm and is therefore fully unsupervised. It leverages the redundancy present in large news corpora, more precisely, the fact that the same quotation often appears across multiple news articles in slightly different contexts. Starting from a few seed patterns, such as ["Q", said S.], our method extracts a set of quotation-speaker pairs (Q,S), which are then used for discovering new patterns expressing the same quotations; the process is then repeated with the larger pattern set. Our algorithm is highly scalable, which we demonstrate by running it on the large ICWSM 2011 Spinn3r corpus. Validating our results against a crowdsourced ground truth, we obtain 90% precision at 40% recall using a single seed pattern, with significantly higher recall values for more frequently reported (and thus likely more interesting) quotations. Finally, we showcase the usefulness of our algorithm's output for computational social science by analyzing the sentiment expressed in our extracted quotations.
 
 ## How to run
-Go to the [Release](https://github.com/epfl-dlab/quotation-extraction/releases) section and download the .zip archive, which contains the executable `quootstrap.jar` as well as all necessary dependencies and configuration files. You can also find a convenient script `extraction_quotations.sh` that can be used to run the application on a Yarn cluster. The script runs this command:
+Go to the **Release** section and download the .zip archive, which contains the executable `quootstrap.jar` as well as all necessary dependencies and configuration files. You can also find a convenient script `extraction_quotations.sh` that can be used to run the application on a Yarn cluster. The script runs this command:
 ```
 spark-submit --jars spinn3r-client-3.4.05-edit.jar,stanford-corenlp-3.8.0.jar,jsoup-1.10.3.jar,guava-14.0.1.jar \
 	--num-executors 8 \
@@ -16,7 +16,7 @@ spark-submit --jars spinn3r-client-3.4.05-edit.jar,stanford-corenlp-3.8.0.jar,js
 	--conf "spark.yarn.executor.memoryOverhead=32768" \
 	--class ch.epfl.dlab.quotation.QuotationExtraction \
 	--master yarn \
-	quotation.jar $1
+	quootstrap.jar $1
 ```
 where `$1` represents the log/output directory. After tuning the settings to suit your particular configuration, you can run the command as:
 ```
@@ -42,7 +42,7 @@ spark-submit \
     --executor-memory 128g \
     --conf "spark.yarn.executor.memoryOverhead=16384" \
     --class ch.epfl.dlab.spinn3r.converter.ProtoToJson --master yarn \
-    quotation.jar /datasets/Spinn3r/icwsm2011/*-OTHER.tar.gz dataset.json \
+    quootstrap.jar /datasets/Spinn3r/icwsm2011/*-OTHER.tar.gz dataset.json \
     --compress=GzipCodec --partitions=500 --source-type=MAINSTREAM_NEWS --remove-duplicates
 ```
 
