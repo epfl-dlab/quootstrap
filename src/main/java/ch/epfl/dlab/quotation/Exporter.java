@@ -21,6 +21,7 @@ import scala.Tuple4;
 
 public class Exporter {
 
+	private final JavaPairRDD<String, String> quotationMap;
 	private final JavaPairRDD<List<Token>, String> freebaseMapping;
 	
 	/** Map article UID to a tuple (full quotation, website, date) */
@@ -38,6 +39,29 @@ public class Exporter {
 			.mapToPair(x -> new Tuple2<>(new Tuple2<>(x.getWebsite(), x.getDate()), new Tuple2<>(x.getArticleContent(), x.getArticleUID())))
 			.flatMapValues(x -> ContextExtractor.extractQuotations(x._1(), x._2()))
 			.mapToPair(x -> new Tuple2<>(x._2.getKey(), new Tuple3<>(x._2.getQuotation(), x._1._1, x._1._2)));
+		
+		this.quotationMap = computeQuotationMap(sc);
+	}
+	
+	private JavaPairRDD<String, String> computeQuotationMap(JavaSparkContext sc) {
+		Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
+		
+		// Reconstruct quotations (from the lower-case canonical form to the full form)
+		return QuotationExtraction.getConcreteDatasetLoader().loadArticles(sc,
+				ConfigManager.getInstance().getDatasetPath(), langSet)
+			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()))
+			.mapToPair(x -> new Tuple2<>(StaticRules.canonicalizeQuotation(x.getQuotation()), x.getQuotation()))
+			.reduceByKey((x, y) -> {
+				// Out of multiple possibilities, get the longest quotation
+				if (x.length() > y.length()) {
+					return x;
+				} else if (x.length() < y.length()) {
+					return y;
+				} else {
+					// Lexicographical comparison to ensure determinism
+					return x.compareTo(y) == -1 ? x : y;
+				}
+			});
 	}
 	
 	public void exportResults(JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> pairs) {
@@ -57,9 +81,11 @@ public class Exporter {
 			.mapToPair(x -> new Tuple2<>(x._2._1, new Tuple4<>(x._1, x._2._2._1(), x._2._2._2(), x._2._2._3()))); // (canonical quotation, (key, full quotation, website, date))
 		
 		pairs // (canonical quotation, (speaker, lineage info))
-			.mapToPair(x -> new Tuple2<>(x._2._1, new Tuple2<>(x._1, x._2._2))) // (speaker, (canonical quotation, lineage info))
+			.join(quotationMap)
+			.mapValues(x -> new Tuple3<>(x._1._1, x._1._2, x._2)) // (canonical quotation, (speaker, lineage info, full quotation))
+			.mapToPair(x -> new Tuple2<>(x._2._1(), new Tuple3<>(x._1, x._2._2(), x._2._3()))) // (speaker, (canonical quotation, lineage info, full quotation))
 			.join(freebaseMapping) // (speaker, ((canonical quotation, lineage info), Freebase ID))
-			.mapToPair(x -> new Tuple2<>(x._2._1._1, new Tuple3<>(x._1, x._2._2, x._2._1._2))) // (canonical quotation, (speaker, Freebase ID of the speaker, lineage info))
+			.mapToPair(x -> new Tuple2<>(x._2._1._1(), new Tuple4<>(x._1, x._2._2, x._2._1._2(), x._2._1._3()))) // (canonical quotation, (speaker, Freebase ID of the speaker, lineage info, full quotation))
 			.cogroup(articleMap)
 			.map(t -> {
 				
@@ -69,25 +95,10 @@ public class Exporter {
 					articles.put(x._1(), new Tuple3<>(x._2(), x._3(), x._4())); // (key, (full quotation, website, date))
 				});
 				
-				Tuple3<List<Token>, String, LineageInfo> data = t._2._1.iterator().next();
-				
-				String quotation = articles.values().stream()
-					.map(x -> x._1()) // Get full quotation
-					.reduce((x, y) -> {
-						// Out of multiple possibilities, get the longest quotation
-						if (x.length() > y.length()) {
-							return x;
-						} else if (x.length() < y.length()) {
-							return y;
-						} else {
-							// Lexicographical comparison to ensure determinism
-							return x.compareTo(y) == -1 ? x : y;
-						}
-					})
-					.get();
+				Tuple4<List<Token>, String, LineageInfo, String> data = t._2._1.iterator().next();
 				
 				JsonObject o = new JsonObject();
-				o.addProperty("quotation", quotation);
+				o.addProperty("quotation", data._4());
 				o.addProperty("canonicalQuotation", canonicalQuotation);
 				o.addProperty("speaker", String.join(" ", Token.getStrings(data._1())));
 				o.addProperty("speakerID", data._2().substring(1, data._2().length() - 1)); // Remove < and > from the Freebase ID
