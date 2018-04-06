@@ -5,6 +5,13 @@ This is the reference implementation of Quootstrap, as described in the paper:
 #### Abstract
 We propose Quootstrap, a method for extracting quotations, as well as the names of the speakers who uttered them, from large news corpora. Whereas prior work has addressed this problem primarily with supervised machine learning, our approach follows a bootstrapping paradigm and is therefore fully unsupervised. It leverages the redundancy present in large news corpora, more precisely, the fact that the same quotation often appears across multiple news articles in slightly different contexts. Starting from a few seed patterns, such as ["Q", said S.], our method extracts a set of quotation-speaker pairs (Q,S), which are then used for discovering new patterns expressing the same quotations; the process is then repeated with the larger pattern set. Our algorithm is highly scalable, which we demonstrate by running it on the large ICWSM 2011 Spinn3r corpus. Validating our results against a crowdsourced ground truth, we obtain 90% precision at 40% recall using a single seed pattern, with significantly higher recall values for more frequently reported (and thus likely more interesting) quotations. Finally, we showcase the usefulness of our algorithm's output for computational social science by analyzing the sentiment expressed in our extracted quotations.
 
+## Dataset
+We release our dataset of quotations as a JSON-formatted file. This is the output of our algorithm on the ICWSM 2011 Spinn3r dataset, which spans one month (from January 13th, 2011 to February 14th, 2011) and contains relevant events such as the Egyptian protests, the Tunisian revolution, and the Super Bowl XLV. The collection consists of 170k quotation-speaker pairs.
+For more information about the dataset (such as the row format), refer to the **"Exporting results"** section. The conditions for using the dataset are described in the **License** section.
+
+> Download URL (25 MB compressed, 140 MB decompressed):
+[https://TODO](https://TODO)
+
 ## How to run
 Go to the **Release** section and download the .zip archive, which contains the executable `quootstrap.jar` as well as all necessary dependencies and configuration files. You can also find a convenient script `extraction_quotations.sh` that can be used to run the application on a Yarn cluster. The script runs this command:
 ```
@@ -28,7 +35,7 @@ To run our code, you need:
 - Java 8
 - Spark 1.6
 - The [ICWSM 2011 Spinn3r dataset](http://www.icwsm.org/data/)
-- Our dataset of people extracted from Freebase.
+- Our dataset of people extracted from Freebase. You can download it from [https://TODO](https://TODO) .
 
 The Spinn3r dataset must be converted to JSON format using the tool that we provide. You can find more details in the README in `src\main\java\ch\epfl\dlab\spinn3r\converter`. The reason for this requirement is that our format is more suitable for distributed processing, whereas the original dataset is stored in large non-splittable archives.
 
@@ -235,3 +242,16 @@ If you want to add support for other datasets/formats, you can provide a concret
 
 ## Replacing the tokenizer
 If, for any reason (e.g. license, language other than English), you do not want to depend on Stanford PTBTokenizer, you can provide your own implementation of the `ch.epfl.dlab.spinn3r.Tokenizer` interface. You only have to implement two methods: `tokenize` and `untokenize`. Tokenization is one of the least critical steps in our pipeline, and does not impact the final result significantly.
+
+## License
+We release our work under the MIT license. Third-party components, such as Stanford CoreNLP, are subject to their respective licenses.
+
+If you use our code and/or data in your research, please cite our paper:
+```
+@inproceedings{quootstrap2018,
+  title={Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping},
+  author={Pavllo, Dario and Piccardi, Tiziano and West, Robert},
+  booktitle={ICWSM-18},
+  year={2018}
+}
+```
