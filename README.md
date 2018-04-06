@@ -251,7 +251,7 @@ If you use our code and/or data in your research, please cite our paper:
 @inproceedings{quootstrap2018,
   title={Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping},
   author={Pavllo, Dario and Piccardi, Tiziano and West, Robert},
-  booktitle={ICWSM-18},
+  booktitle={Proceedings of the 12th International Conference on Web and Social Media},
   year={2018}
 }
 ```
