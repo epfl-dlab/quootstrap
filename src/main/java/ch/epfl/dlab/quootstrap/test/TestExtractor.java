@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation.test;
+package ch.epfl.dlab.quootstrap.test;
 
 import static org.junit.Assert.*;
 
@@ -9,10 +9,10 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import ch.epfl.dlab.quotation.Pattern;
-import ch.epfl.dlab.quotation.PatternExtractor;
-import ch.epfl.dlab.quotation.Sentence;
-import ch.epfl.dlab.quotation.Token;
+import ch.epfl.dlab.quootstrap.Pattern;
+import ch.epfl.dlab.quootstrap.PatternExtractor;
+import ch.epfl.dlab.quootstrap.Sentence;
+import ch.epfl.dlab.quootstrap.Token;
 
 public class TestExtractor {
 

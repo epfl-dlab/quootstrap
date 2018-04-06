@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation;
+package ch.epfl.dlab.quootstrap;
 
 import java.io.Serializable;
 import java.util.List;

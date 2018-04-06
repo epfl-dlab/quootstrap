@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation.test;
+package ch.epfl.dlab.quootstrap.test;
 
 import static org.junit.Assert.*;
 
@@ -9,16 +9,16 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import ch.epfl.dlab.quotation.HashTrie;
-import ch.epfl.dlab.quotation.HashTriePatternMatcher;
-import ch.epfl.dlab.quotation.Pattern;
-import ch.epfl.dlab.quotation.PatternMatcher;
-import ch.epfl.dlab.quotation.PatternMatcher.Match;
-import ch.epfl.dlab.quotation.SimplePatternMatcher;
-import ch.epfl.dlab.quotation.Sentence;
-import ch.epfl.dlab.quotation.Token;
-import ch.epfl.dlab.quotation.Trie;
-import ch.epfl.dlab.quotation.TriePatternMatcher;
+import ch.epfl.dlab.quootstrap.HashTrie;
+import ch.epfl.dlab.quootstrap.HashTriePatternMatcher;
+import ch.epfl.dlab.quootstrap.Pattern;
+import ch.epfl.dlab.quootstrap.PatternMatcher;
+import ch.epfl.dlab.quootstrap.Sentence;
+import ch.epfl.dlab.quootstrap.SimplePatternMatcher;
+import ch.epfl.dlab.quootstrap.Token;
+import ch.epfl.dlab.quootstrap.Trie;
+import ch.epfl.dlab.quootstrap.TriePatternMatcher;
+import ch.epfl.dlab.quootstrap.PatternMatcher.Match;
 
 public class TestPattern {
 

@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation;
+package ch.epfl.dlab.quootstrap;
 
 import java.util.Collections;
 import java.util.List;

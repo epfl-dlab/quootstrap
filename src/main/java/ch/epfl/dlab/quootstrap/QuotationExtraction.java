@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation;
+package ch.epfl.dlab.quootstrap;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,7 +21,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
-import ch.epfl.dlab.quotation.Dawg.Node;
+import ch.epfl.dlab.quootstrap.Dawg.Node;
 import ch.epfl.dlab.spinn3r.converter.IteratorWrapper;
 import ch.epfl.dlab.spinn3r.converter.Stopwatch;
 import scala.Tuple2;

@@ -1,10 +1,10 @@
-package ch.epfl.dlab.quotation.test;
+package ch.epfl.dlab.quootstrap.test;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import ch.epfl.dlab.quotation.StaticRules;
+import ch.epfl.dlab.quootstrap.StaticRules;
 
 public class TestRules {
 

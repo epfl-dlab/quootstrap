@@ -1,4 +1,4 @@
-package ch.epfl.dlab.quotation.test;
+package ch.epfl.dlab.quootstrap.test;
 
 import static org.junit.Assert.*;
 
@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import ch.epfl.dlab.quotation.Utils;
+import ch.epfl.dlab.quootstrap.Utils;
 
 public class TestUtils {
 

@@ -5,6 +5,6 @@ spark-submit --jars spinn3r-client-3.4.05-edit.jar,stanford-corenlp-3.8.0.jar,js
 	--driver-memory 192g \
 	--executor-memory 192g \
 	--conf "spark.yarn.executor.memoryOverhead=32768" \
-	--class ch.epfl.dlab.quotation.QuotationExtraction \
+	--class ch.epfl.dlab.quootstrap.QuotationExtraction \
 	--master yarn \
-	quotation.jar $1
+	quootstrap.jar $1
