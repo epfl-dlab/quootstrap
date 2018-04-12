@@ -1,5 +1,5 @@
 # Quootstrap
-This is the reference implementation of Quootstrap, as described in the paper:
+This is the reference implementation of Quootstrap, as described in the paper [[PDF]](https://dlab.epfl.ch/people/west/pub/Pavllo-Piccardi-West_ICWSM-18.pdf):
 > Dario Pavllo, Tiziano Piccardi, Robert West. *Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping*. In *Proceedings of the 12th International Conference on Web and Social Media (ICWSM),* 2018.
 
 #### Abstract
@@ -246,7 +246,7 @@ If, for any reason (e.g. license, language other than English), you do not want 
 ## License
 We release our work under the MIT license. Third-party components, such as Stanford CoreNLP, are subject to their respective licenses.
 
-If you use our code and/or data in your research, please cite our paper:
+If you use our code and/or data in your research, please cite our paper [[PDF]](https://dlab.epfl.ch/people/west/pub/Pavllo-Piccardi-West_ICWSM-18.pdf):
 ```
 @inproceedings{quootstrap2018,
   title={Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping},
