@@ -1,6 +1,6 @@
 # Quootstrap
 This is the reference implementation of Quootstrap, as described in the paper:
-> Dario Pavllo, Tiziano Piccardi, Robert West. *Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping*. In [ICWSM-18](http://www.icwsm.org/2018/index.php).
+> Dario Pavllo, Tiziano Piccardi, Robert West. *Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping*. In *Proceedings of the 12th International Conference on Web and Social Media (ICWSM),* 2018.
 
 #### Abstract
 We propose Quootstrap, a method for extracting quotations, as well as the names of the speakers who uttered them, from large news corpora. Whereas prior work has addressed this problem primarily with supervised machine learning, our approach follows a bootstrapping paradigm and is therefore fully unsupervised. It leverages the redundancy present in large news corpora, more precisely, the fact that the same quotation often appears across multiple news articles in slightly different contexts. Starting from a few seed patterns, such as ["Q", said S.], our method extracts a set of quotation-speaker pairs (Q,S), which are then used for discovering new patterns expressing the same quotations; the process is then repeated with the larger pattern set. Our algorithm is highly scalable, which we demonstrate by running it on the large ICWSM 2011 Spinn3r corpus. Validating our results against a crowdsourced ground truth, we obtain 90% precision at 40% recall using a single seed pattern, with significantly higher recall values for more frequently reported (and thus likely more interesting) quotations. Finally, we showcase the usefulness of our algorithm's output for computational social science by analyzing the sentiment expressed in our extracted quotations.
@@ -251,7 +251,7 @@ If you use our code and/or data in your research, please cite our paper:
 @inproceedings{quootstrap2018,
   title={Quootstrap: Scalable Unsupervised Extraction of Quotation-Speaker Pairs from Large News Corpora via Bootstrapping},
   author={Pavllo, Dario and Piccardi, Tiziano and West, Robert},
-  booktitle={ICWSM-18},
+  booktitle={Proceedings of the 12th International Conference on Web and Social Media (ICWSM)},
   year={2018}
 }
 ```
