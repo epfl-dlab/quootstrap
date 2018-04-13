@@ -10,7 +10,7 @@ We release our dataset of quotations as a JSON-formatted file. This is the outpu
 For more information about the dataset (such as the row format), refer to the **"Exporting results"** section. The conditions for using the dataset are described in the **License** section.
 
 > Download URL (25 MB compressed, 140 MB decompressed):
-[https://TODO](https://TODO)
+https://drive.google.com/file/d/1ybp71ClLUkFnADQEFgcpC2qGuwFx9IEp/view
 
 ## How to run
 Go to the **Release** section and download the .zip archive, which contains the executable `quootstrap.jar` as well as all necessary dependencies and configuration files. You can also find a convenient script `extraction_quotations.sh` that can be used to run the application on a Yarn cluster. The script runs this command:
@@ -35,7 +35,7 @@ To run our code, you need:
 - Java 8
 - Spark 1.6
 - The [ICWSM 2011 Spinn3r dataset](http://www.icwsm.org/data/)
-- Our dataset of people extracted from Freebase. You can download it from [https://TODO](https://TODO) .
+- Our dataset of people extracted from Freebase. You can download it from: https://drive.google.com/file/d/1fj4LxOE5T9WlNfW2tYycKi7ZYaJaOnXW/view
 
 The Spinn3r dataset must be converted to JSON format using the tool that we provide. You can find more details in the README in `src\main\java\ch\epfl\dlab\spinn3r\converter`. The reason for this requirement is that our format is more suitable for distributed processing, whereas the original dataset is stored in large non-splittable archives.
 
