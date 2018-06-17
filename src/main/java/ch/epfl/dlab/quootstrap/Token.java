@@ -1,8 +1,10 @@
 package ch.epfl.dlab.quootstrap;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -69,6 +71,26 @@ public final class Token implements Serializable, Comparable<Token> {
 			return type == t.type && Objects.equals(text, t.text);
 		}
 		return false;
+	}
+	
+	public boolean equalsIgnoreCase(Token t) {
+		if (t == null) {
+			return false;
+		}
+		
+		return type == t.type && text.equalsIgnoreCase(t.text);
+	}
+	
+	public static List<Token> caseFold(List<Token> tokens) {
+		return tokens.stream()
+			.map(x -> {
+				if (x.text != null) {
+					String s = x.text.toLowerCase(Locale.ROOT);
+					return new Token(s, x.type);
+				}
+				return x;
+			})
+			.collect(Collectors.toCollection(ArrayList::new));
 	}
 	
 	@Override

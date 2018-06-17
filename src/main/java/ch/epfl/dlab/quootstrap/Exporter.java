@@ -22,16 +22,22 @@ import scala.Tuple4;
 public class Exporter {
 
 	private final JavaPairRDD<String, String> quotationMap;
-	private final JavaPairRDD<List<Token>, String> freebaseMapping;
+	private final JavaPairRDD<List<Token>, Tuple2<String, String>> freebaseMapping;
 	
 	/** Map article UID to a tuple (full quotation, website, date) */
 	private final JavaPairRDD<Tuple2<Long, Integer>, Tuple3<String, String, String>> articles;
 	
 	public Exporter(JavaSparkContext sc, JavaRDD<Sentence> sentences, NameDatabase people)  {
 		
+		final boolean caseSensitive = ConfigManager.getInstance().isCaseSensitive();
+		
 		// Map speakers to their unique Freebase ID
 		this.freebaseMapping = people.getPeopleRDD()
-				.mapToPair(x -> new Tuple2<>(Token.getTokens(x._1), x._2));
+				.mapToPair(x -> new Tuple2<>(
+						caseSensitive ? Token.getTokens(x._1) : Token.caseFold(Token.getTokens(x._1)),
+						new Tuple2<>(x._2, String.join(" ", x._1))
+					))
+				.reduceByKey((x, y) -> x._2.compareTo(y._2) == -1 ? x : y);
 		
 		final Set<String> langSet = new HashSet<>(ConfigManager.getInstance().getLangFilter());
 		this.articles = QuotationExtraction.getConcreteDatasetLoader().loadArticles(sc,
@@ -66,7 +72,8 @@ public class Exporter {
 	
 	public void exportResults(JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> pairs) {
 		String exportPath = ConfigManager.getInstance().getExportPath();
-
+		final boolean caseSensitive = ConfigManager.getInstance().isCaseSensitive();
+		
 		JavaPairRDD<String, Tuple4<Tuple2<Long, Integer>, String, String, String>> articleMap = pairs.mapToPair(x -> new Tuple2<>(x._1, x._2._2)) // (canonical quotation, lineage info)
 			.flatMapValues(x -> {
 				// (key)
@@ -83,9 +90,9 @@ public class Exporter {
 		pairs // (canonical quotation, (speaker, lineage info))
 			.join(quotationMap)
 			.mapValues(x -> new Tuple3<>(x._1._1, x._1._2, x._2)) // (canonical quotation, (speaker, lineage info, full quotation))
-			.mapToPair(x -> new Tuple2<>(x._2._1(), new Tuple3<>(x._1, x._2._2(), x._2._3()))) // (speaker, (canonical quotation, lineage info, full quotation))
+			.mapToPair(x -> new Tuple2<>(caseSensitive ? x._2._1() : Token.caseFold(x._2._1()), new Tuple3<>(x._1, x._2._2(), x._2._3()))) // (speaker, (canonical quotation, lineage info, full quotation))
 			.join(freebaseMapping) // (speaker, ((canonical quotation, lineage info), Freebase ID))
-			.mapToPair(x -> new Tuple2<>(x._2._1._1(), new Tuple4<>(x._1, x._2._2, x._2._1._2(), x._2._1._3()))) // (canonical quotation, (speaker, Freebase ID of the speaker, lineage info, full quotation))
+			.mapToPair(x -> new Tuple2<>(x._2._1._1(), new Tuple4<>(x._2._2._2, x._2._2._1, x._2._1._2(), x._2._1._3()))) // (canonical quotation, (speaker, Freebase ID of the speaker, lineage info, full quotation))
 			.cogroup(articleMap)
 			.map(t -> {
 				
@@ -95,12 +102,12 @@ public class Exporter {
 					articles.put(x._1(), new Tuple3<>(x._2(), x._3(), x._4())); // (key, (full quotation, website, date))
 				});
 				
-				Tuple4<List<Token>, String, LineageInfo, String> data = t._2._1.iterator().next();
+				Tuple4<String, String, LineageInfo, String> data = t._2._1.iterator().next();
 				
 				JsonObject o = new JsonObject();
 				o.addProperty("quotation", data._4());
 				o.addProperty("canonicalQuotation", canonicalQuotation);
-				o.addProperty("speaker", String.join(" ", Token.getStrings(data._1())));
+				o.addProperty("speaker", data._1());
 				o.addProperty("speakerID", data._2().substring(1, data._2().length() - 1)); // Remove < and > from the Freebase ID
 				o.addProperty("confidence", data._3().getConfidence()); // Tuple confidence
 				

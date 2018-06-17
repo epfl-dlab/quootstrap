@@ -39,7 +39,8 @@ public class TestExtractor {
 		Sentence s = buildSentence(sentence, "test");
 		Pattern p = PatternExtractor.extractPattern(s,
 				quotation,
-				toTokenList(speaker, Token.Type.GENERIC));
+				toTokenList(speaker, Token.Type.GENERIC),
+				true);
 		
 		if (p == null) {
 			return null;

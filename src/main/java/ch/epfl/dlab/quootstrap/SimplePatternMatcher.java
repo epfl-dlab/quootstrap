@@ -9,14 +9,16 @@ public class SimplePatternMatcher extends PatternMatcher {
 	private List<Token> patternTokens;
 	private Pattern currentPattern;
 	
-	public SimplePatternMatcher(Pattern pattern, int speakerLengthMin, int speakerLengthMax) {
-		super(speakerLengthMin, speakerLengthMax);
+	public SimplePatternMatcher(Pattern pattern,
+			int speakerLengthMin, int speakerLengthMax, boolean caseSensitive) {
+		super(speakerLengthMin, speakerLengthMax, caseSensitive);
 		this.patterns = new ArrayList<>();
 		patterns.add(pattern);
 	}
 	
-	public SimplePatternMatcher(List<Pattern> patterns, int speakerLengthMin, int speakerLengthMax) {
-		super(speakerLengthMin, speakerLengthMax);
+	public SimplePatternMatcher(List<Pattern> patterns,
+			int speakerLengthMin, int speakerLengthMax, boolean caseSensitive) {
+		super(speakerLengthMin, speakerLengthMax, caseSensitive);
 		this.patterns = new ArrayList<>(patterns);
 	}
 	

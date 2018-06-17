@@ -11,7 +11,7 @@ public class TriePatternMatcher extends PatternMatcher {
 	private double matchedConfidenceFactor;
 	
 	public TriePatternMatcher(Trie trie, int speakerLengthMin, int speakerLengthMax) {
-		super(speakerLengthMin, speakerLengthMax);
+		super(speakerLengthMin, speakerLengthMax, trie.isCaseSensitive());
 		this.trie = trie;
 		currentPattern = new ArrayList<>();
 		matchedConfidenceFactor = Double.NaN;
@@ -27,7 +27,7 @@ public class TriePatternMatcher extends PatternMatcher {
 		
 			matchedConfidenceFactor = Double.NaN;
 			if (sentenceTokens.get(i).getType() == Token.Type.GENERIC) {
-				Trie.Node node = trie.getRootNode().getTextChild(sentenceTokens.get(i));
+				Trie.Node node = trie.getRootNode().getTextChild(sentenceTokens.get(i).toString());
 				if (node != null) {
 					currentPattern.add(node);
 					if (matchImpl(node, i, maxSpeakerLength)) {
@@ -59,7 +59,7 @@ public class TriePatternMatcher extends PatternMatcher {
 			boolean result = false;
 			
 			if (j + 1 < sentenceTokens.size() && sentenceTokens.get(j + 1).getType() == Token.Type.GENERIC) {
-				Trie.Node next = node.getTextChild(sentenceTokens.get(j + 1));
+				Trie.Node next = node.getTextChild(sentenceTokens.get(j + 1).toString());
 				if (next != null) {
 					currentPattern.add(next);
 					if (matchImpl(next, j + 1, speakerTokensLeft)) {

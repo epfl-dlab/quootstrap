@@ -99,7 +99,7 @@ public class HashTriePatternMatcher {
 	
 	private boolean matchImpl(List<Token> tokens, HashTrie.Node current, int i) {
 
-		if (i == tokens.size()) { // TODO investigate why it was tokens.size() - 1
+		if (i == tokens.size()) {
 			return false;
 		}
 		
@@ -110,7 +110,7 @@ public class HashTriePatternMatcher {
 		String tokenStr = tokens.get(i).toString();
 		HashTrie.Node next = current.findChild(tokenStr);
 		if (next != null) {
-			currentMatch.add(tokenStr);
+			currentMatch.add(next.getValue());
 			boolean result = false;
 			if (next.isTerminal()) {
 				// Match found

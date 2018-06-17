@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class Trie implements Serializable {
@@ -14,9 +15,11 @@ public class Trie implements Serializable {
 	private static final long serialVersionUID = -9164247688163451454L;
 	
 	private final Node rootNode;
+	private final boolean caseSensitive;
 	
-	public Trie(Collection<Pattern> patterns) {
-		rootNode = new RootNode();
+	public Trie(Collection<Pattern> patterns, boolean caseSensitive) {
+		this.rootNode = new RootNode(caseSensitive);
+		this.caseSensitive = caseSensitive;
 		List<Pattern> sortedPatterns = new ArrayList<>(patterns);
 		sortedPatterns.sort(Collections.reverseOrder());
 		sortedPatterns.forEach(this::insertPattern);
@@ -32,10 +35,15 @@ public class Trie implements Serializable {
 			
 			if (token.getType() == Token.Type.GENERIC) {
 				// Text token
-				next = current.getTextChild(token);
+				String key = caseSensitive
+						? token.toString()
+						: token.toString().toLowerCase(Locale.ROOT);
+				next = current.getTextChild(key);
 				if (next == null) {
-					next = it.hasNext() ? new InnerNode(token) : new TerminalNode(token, pattern.getConfidenceMetric());
-					((RootNode) current).textChildren.put(token, next);
+					next = it.hasNext()
+							? new InnerNode(token, caseSensitive)
+							: new TerminalNode(token, pattern.getConfidenceMetric());
+					((RootNode) current).textChildren.put(key, next);
 				}
 			} else {
 				// Special token
@@ -46,13 +54,19 @@ public class Trie implements Serializable {
 					}
 				}
 				if (next == null) {
-					next = it.hasNext() ? new InnerNode(token) : new TerminalNode(token, pattern.getConfidenceMetric());
+					next = it.hasNext()
+							? new InnerNode(token, caseSensitive)
+							: new TerminalNode(token, pattern.getConfidenceMetric());
 					((RootNode) current).children.add(next);
 				}
 			}
 			
 			current = next;
 		}
+	}
+	
+	public boolean isCaseSensitive() {
+		return caseSensitive;
 	}
 	
 	public List<Pattern> getAllPatterns() {
@@ -89,7 +103,7 @@ public class Trie implements Serializable {
 	public interface Node extends Iterable<Node>, Serializable {
 		Token getToken();
 		boolean hasChildren();
-		Node getTextChild(Token key);
+		Node getTextChild(String key);
 		Iterable<Node> getTextChildren();
 		double getConfidenceFactor();
 	}
@@ -98,12 +112,14 @@ public class Trie implements Serializable {
 
 		private static final long serialVersionUID = -3680161357395993244L;
 		
-		private final Map<Token, Node> textChildren;
+		private final Map<String, Node> textChildren;
 		private final List<Node> children;
+		private final boolean caseSensitive;
 		
-		public RootNode() {
-			children = new ArrayList<>();
-			textChildren = new HashMap<>();
+		public RootNode(boolean caseSensitive) {
+			this.children = new ArrayList<>();
+			this.textChildren = new HashMap<>();
+			this.caseSensitive = caseSensitive;
 		}
 		
 		@Override
@@ -132,7 +148,10 @@ public class Trie implements Serializable {
 		}
 
 		@Override
-		public Node getTextChild(Token key) {
+		public Node getTextChild(String key) {
+			if (!caseSensitive) {
+				key = key.toLowerCase(Locale.ROOT);
+			}
 			return textChildren.get(key);
 		}
 
@@ -148,8 +167,8 @@ public class Trie implements Serializable {
 		
 		private final Token token;
 		
-		private InnerNode(Token t) {
-			super();
+		private InnerNode(Token t, boolean caseSensitive) {
+			super(caseSensitive);
 			token = t;
 		}
 		
@@ -201,7 +220,7 @@ public class Trie implements Serializable {
 		}
 		
 		@Override
-		public Node getTextChild(Token key) {
+		public Node getTextChild(String key) {
 			return null;
 		}
 

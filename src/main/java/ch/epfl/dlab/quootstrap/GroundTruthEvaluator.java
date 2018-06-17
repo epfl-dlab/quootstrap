@@ -51,9 +51,11 @@ public class GroundTruthEvaluator {
 	
 	public void evaluate(JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> testPairs, int iteration) {
 		
+		final boolean caseSensitive = ConfigManager.getInstance().isCaseSensitive();
+		
 		final List<List<Token>> speakers = getSpeakers();
 		JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> matched = testPairs
-				.mapValues(x -> new Tuple2<>(StaticRules.matchSpeakerApprox(x._1, speakers), x._2))
+				.mapValues(x -> new Tuple2<>(StaticRules.matchSpeakerApprox(x._1, speakers, caseSensitive), x._2))
 				.filter(x -> x._2._1.isPresent())
 				.mapValues(x -> new Tuple2<>(x._1.get(), x._2));
 		

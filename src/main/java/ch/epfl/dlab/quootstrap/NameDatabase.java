@@ -19,7 +19,7 @@ public class NameDatabase implements Serializable {
 	
 	public NameDatabase(JavaSparkContext sc, String knowledgeFile) {
 		List<List<String>> names = getNamesRDD(sc, knowledgeFile).collect();
-		trie = new HashTrie(names);
+		trie = new HashTrie(names, ConfigManager.getInstance().isCaseSensitive());
 	}
 	
 	private JavaRDD<List<String>> getNamesRDD(JavaSparkContext sc, String fileName) {

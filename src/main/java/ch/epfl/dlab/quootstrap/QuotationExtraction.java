@@ -46,6 +46,8 @@ public class QuotationExtraction {
 		final boolean finalEvaluation = ConfigManager.getInstance().isFinalEvaluationEnabled();
 		final boolean intermediateEvaluation = ConfigManager.getInstance().isIntermediateEvaluationEnabled();
 		
+		final boolean caseSensitive = ConfigManager.getInstance().isCaseSensitive();
+		
 		// Use Kryo serializer and register most frequently used classes to improve performance
 		final SparkConf conf = new SparkConf()
 				.setAppName("QuotationExtraction")
@@ -108,7 +110,8 @@ public class QuotationExtraction {
 			final int maxSpeakerLength = 5;
 			
 			for (int iter = 0; iter < numIterations; iter++) {
-				Broadcast<Trie> broadcastTrie = sc.broadcast(new Trie(currentPatterns));
+				Broadcast<Trie> broadcastTrie = sc.broadcast(
+						new Trie(currentPatterns, caseSensitive));
 				JavaRDD<Tuple4<String, List<Token>, Sentence, Pattern>> rawPairs = remainingQuotations
 					.map(x -> x._2)
 					.mapPartitions(it -> {
@@ -144,7 +147,8 @@ public class QuotationExtraction {
 								if (match.size() == speaker.size()) {
 									// We have an exact match -> nothing to do
 									// e.g. "John Doe" matched with "John Doe"
-									out.add(sentences.get(i));
+									Tuple4<String, List<Token>, Sentence, Pattern> s = sentences.get(i);
+									out.add(new Tuple4<>(s._1(), match, s._3(), s._4()));
 									mc.increment("exact");
 								}
 							} else {
@@ -155,7 +159,7 @@ public class QuotationExtraction {
 						
 						// Try to extend short, unmatched patterns
 						for (int i : unmatchedIndices) {
-							List<Token> match = Utils.findUniqueSuperstring(speakersInArticle.get(i), validNames);
+							List<Token> match = Utils.findUniqueSuperstring(speakersInArticle.get(i), validNames, caseSensitive);
 							if (match != null) {
 								
 								// The tokens that we used for the extension must not be present in the sentence,
@@ -265,7 +269,7 @@ public class QuotationExtraction {
 				List<Pattern> nextPatternsTmp = remainingSentences.mapToPair(x -> new Tuple2<>(x.getQuotation(), x))
 						.join(pairs)
 						// (quotation, (pattern, speaker))
-						.map(x -> PatternExtractor.extractPattern(x._2._1, x._1, x._2._2._1))
+						.map(x -> PatternExtractor.extractPattern(x._2._1, x._1, x._2._2._1, caseSensitive))
 						.filter(x -> x != null)
 						.collect();
 				
@@ -276,7 +280,7 @@ public class QuotationExtraction {
 				nextPatternsTmp = inferPatterns(nextPatternsTmp);
 				
 				// Update confidence factor
-				Broadcast<Trie> broadcastNextTrie = sc.broadcast(new Trie(nextPatternsTmp));
+				Broadcast<Trie> broadcastNextTrie = sc.broadcast(new Trie(nextPatternsTmp, caseSensitive));
 				List<Tuple2<Pattern, Integer>> nextPatterns = remainingSentences
 					.mapPartitions(it -> {
 						PatternMatcher mt = new TriePatternMatcher(broadcastNextTrie.value(), minSpeakerLength, maxSpeakerLength);
@@ -287,7 +291,7 @@ public class QuotationExtraction {
 					.mapToPair(x -> {
 						// Give low weight to short quotations (collisions likely) and high weight to long quotations
 						double weight = Math.tanh(0.1 * x._1.length());
-						return new Tuple2<>(x._2._1._1(), new Tuple3<>(StaticRules.matchSpeakerApprox(x._2._1._2(), x._2._2._1) ? weight : 0, weight, 1));
+						return new Tuple2<>(x._2._1._1(), new Tuple3<>(StaticRules.matchSpeakerApprox(x._2._1._2(), x._2._2._1, caseSensitive) ? weight : 0, weight, 1));
 					})
 					.reduceByKey((x, y) -> new Tuple3<>(x._1() + y._1(), x._2() + y._2(), x._3() + y._3()))
 					.filter(x -> x._2._3() >= 5) // At least N extracted pairs

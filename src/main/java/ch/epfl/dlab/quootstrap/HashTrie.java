@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -14,9 +15,11 @@ public class HashTrie implements Serializable {
 	private static final long serialVersionUID = -9164247688163451454L;
 	
 	private final Node rootNode;
+	private final boolean caseSensitive;
 	
-	public HashTrie(Iterable<List<String>> substrings) {
-		rootNode = new Node();
+	public HashTrie(Iterable<List<String>> substrings, boolean caseSensitive) {
+		this.rootNode = new Node(null, caseSensitive);
+		this.caseSensitive = caseSensitive;
 		substrings.forEach(this::insertSubstring);
 	}
 	
@@ -25,11 +28,12 @@ public class HashTrie implements Serializable {
 		
 		for (int i = 0; i < substring.size(); i++) {
 			String token = substring.get(i);
+			String key = caseSensitive ? token : token.toLowerCase(Locale.ROOT);
 			
-			Node next = current.findChild(token);
+			Node next = current.findChild(key);
 			if (next == null) {
-				next = new Node();
-				current.children.put(token, next);
+				next = new Node(token, caseSensitive);
+				current.children.put(key, next);
 			}
 			current = next;
 		}
@@ -66,10 +70,14 @@ public class HashTrie implements Serializable {
 		private static final long serialVersionUID = -4344489198225825075L;
 		
 		private final Map<String, Node> children;
+		private final boolean caseSensitive;
+		private final String value;
 		private boolean terminal;
 		
-		public Node() {
+		public Node(String value, boolean caseSensitive) {
 			this.children = new HashMap<>();
+			this.caseSensitive = caseSensitive;
+			this.value = value;
 			this.terminal = false;
 		}
 		
@@ -78,11 +86,15 @@ public class HashTrie implements Serializable {
 		}
 		
 		public Node findChild(String token) {
-			return children.get(token);
+			return children.get(caseSensitive ? token : token.toLowerCase(Locale.ROOT));
 		}
 		
 		public boolean isTerminal() {
 			return terminal;
+		}
+		
+		public String getValue() {
+			return value;
 		}
 
 		@Override

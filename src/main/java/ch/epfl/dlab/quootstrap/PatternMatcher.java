@@ -17,19 +17,21 @@ public abstract class PatternMatcher {
 	
 	protected final int minSpeakerLength;
 	protected final int maxSpeakerLength;
+	protected final boolean caseSensitive;
 	
-	protected PatternMatcher(int speakerLengthMin, int speakerLengthMax) {
+	protected PatternMatcher(int speakerLengthMin, int speakerLengthMax, boolean caseSensitive) {
 		matchedQuotation = new ArrayList<>();
 		matchedSpeaker = new ArrayList<>();
 		minSpeakerLength = speakerLengthMin;
 		maxSpeakerLength = speakerLengthMax;
+		this.caseSensitive = caseSensitive;
 		matches = new ArrayList<>();
 	}
 	
 	public abstract boolean match(Sentence s);
 	
 	public List<Match> getMatches(boolean longest) {
-		if (longest) {
+		if (longest && !matches.isEmpty()) {
 			// We want only the pattern with the highest cardinality (i.e. number of text tokens)
 			final int longestLength = Collections.max(matches,
 					(x, y) -> Integer.compare(x.getPattern().getCardinality(), y.getPattern().getCardinality()))
@@ -46,7 +48,16 @@ public abstract class PatternMatcher {
 	protected final boolean matchTokens(Token patternToken, Token token, int speakerTokensLeft) {
 		switch (patternToken.getType()) {
 		case GENERIC:
-			return token.getType() == Token.Type.GENERIC && token.equals(patternToken);
+			if (token.getType() == Token.Type.GENERIC) {
+				String tokenStr = token.toString();
+				String patternTokenStr = patternToken.toString();
+				if (caseSensitive) {
+					return tokenStr.equals(patternTokenStr);
+				} else {
+					return tokenStr.equalsIgnoreCase(patternTokenStr);
+				}
+			}
+			return false;
 		case SPEAKER:
 			if (speakerTokensLeft > 0 && token.getType() == Token.Type.GENERIC) {
 				speakerTokenFoundFlag = true;

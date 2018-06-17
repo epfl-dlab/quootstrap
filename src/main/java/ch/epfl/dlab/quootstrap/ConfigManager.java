@@ -16,6 +16,7 @@ public final class ConfigManager {
 	private final String datasetPath;
 	private final String namesPath;
 	private final int numIterations;
+	private final boolean caseSensitive;
 	private final List<String> langFilter;
 	
 	private final String newsDatasetLoader;
@@ -54,6 +55,7 @@ public final class ConfigManager {
 		namesPath = prop.getProperty("PEOPLE_DATASET_PATH");
 		numIterations = Integer.parseInt(
 				prop.getProperty("NUM_ITERATIONS"));
+		caseSensitive = prop.getProperty("CASE_SENSITIVE").equals("true");
 		langFilter = Arrays.asList(prop.getProperty("LANGUAGE_FILTER").split("\\|"));
 		
 		newsDatasetLoader = prop.getProperty("NEWS_DATASET_LOADER");
@@ -100,6 +102,10 @@ public final class ConfigManager {
 
 	public int getNumIterations() {
 		return numIterations;
+	}
+	
+	public boolean isCaseSensitive() {
+		return caseSensitive;
 	}
 
 	public List<String> getLangFilter() {

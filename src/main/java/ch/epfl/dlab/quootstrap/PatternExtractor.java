@@ -5,11 +5,12 @@ import java.util.List;
 
 public class PatternExtractor {
 
-	public static Pattern extractPattern(Sentence s, String quotation, List<Token> speaker) {
+	public static Pattern extractPattern(Sentence s, String quotation,
+			List<Token> speaker, boolean caseSensitive) {
 		
 		int quotationPtr = 0;
 		
-		int indexOfSpeaker = getIndexOfSpeaker(s, speaker);
+		int indexOfSpeaker = getIndexOfSpeaker(s, speaker, caseSensitive);
 		if (indexOfSpeaker == -1 || indexOfSpeaker == 0) {
 			// If match not found, or, if match found at position 0...
 			return null;
@@ -74,8 +75,14 @@ public class PatternExtractor {
 		return new Pattern(patternTokens);
 	}
 	
-	private static int getIndexOfSpeaker(Sentence s, List<Token> speaker) {
+	private static int getIndexOfSpeaker(Sentence s, List<Token> speaker, boolean caseSensitive) {
 		List<Token> tokens = s.getTokens();
+		
+		if (!caseSensitive) {
+			tokens = Token.caseFold(tokens);
+			speaker = Token.caseFold(speaker);
+		}
+		
 		for (Token t : speaker) {
 			// Each token must be perfectly matched without duplicates (even if they are partial)
 			int firstIndex = tokens.indexOf(t);

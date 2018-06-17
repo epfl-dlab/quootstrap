@@ -38,9 +38,9 @@ public class TestPattern {
 	@Test
 	public void test1() {
 		Pattern p = new Pattern("$Q , said $S .");
-		test1Impl(new SimplePatternMatcher(p, 2, 5));
+		test1Impl(new SimplePatternMatcher(p, 2, 5, true));
 		
-		Trie t = new Trie(Arrays.asList(p));
+		Trie t = new Trie(Arrays.asList(p), true);
 		PatternMatcher pm = new TriePatternMatcher(t, 2, 5);
 		test1Impl(pm);
 		List<PatternMatcher.Match> matches = pm.getMatches(true);
@@ -70,9 +70,9 @@ public class TestPattern {
 	@Test
 	public void test2() {
 		Pattern p = new Pattern(", $S said : $Q");
-		test2Impl(new SimplePatternMatcher(p, 2, 5));
+		test2Impl(new SimplePatternMatcher(p, 2, 5, true));
 		
-		Trie t = new Trie(Arrays.asList(p));
+		Trie t = new Trie(Arrays.asList(p), true);
 		PatternMatcher pm = new TriePatternMatcher(t, 2, 5);
 		test2Impl(pm);
 		List<PatternMatcher.Match> matches = pm.getMatches(true);
@@ -89,14 +89,37 @@ public class TestPattern {
 		assertTrue(m.match(buildSentence("Yesterday , Mr John Doe said : *** .", "Hi!")));
 	}
 	
-	private void hashTrieCase(String haystack, String expected, String... needles) {
+	@Test
+	public void testCaseInsensitive() {
+		Pattern p = new Pattern("$Q , said $S .");
+		PatternMatcher spm = new SimplePatternMatcher(p, 2, 5, false);
+		test1Impl(spm);
+		test3Impl(spm);
+		
+		Trie t = new Trie(Arrays.asList(p), false);
+		PatternMatcher pm = new TriePatternMatcher(t, 2, 5);
+		test1Impl(pm);
+		test3Impl(pm);
+	}
+	
+	private void test3Impl(PatternMatcher m) {
+		assertFalse(m.match(buildSentence("*** , said John . However...", "It works!")));
+		assertFalse(m.match(buildSentence("*** , SAID John . However...", "It works!")));
+		assertTrue(m.match(buildSentence("*** , SAID John Doe . However...", "It works!")));
+		assertTrue(m.match(buildSentence("*** , saId John Doe . However...", "It works!")));
+		assertFalse(m.match(buildSentence("*** , sad Mr John Doe II Jr III . However...", "It works!")));
+	}
+	
+	private void hashTrieCase(boolean caseSensitive, String haystack, String expected,
+			String... needles) {
 		Sentence s = new Sentence(Arrays.asList(haystack.split(" ")).stream()
 				.map(x -> new Token(x, Token.Type.GENERIC))
 				.collect(Collectors.toList()), true);
 		
 		HashTrie t = new HashTrie(Arrays.asList(needles).stream()
 			.map(x -> Arrays.asList(x.split(" ")))
-			.collect(Collectors.toList()));
+			.collect(Collectors.toList()),
+			caseSensitive);
 		
 		HashTriePatternMatcher pm = new HashTriePatternMatcher(t);
 		boolean match = pm.match(s);
@@ -117,20 +140,29 @@ public class TestPattern {
 	
 	@Test
 	public void testHashTrie() {
-		hashTrieCase("Hello John Doe !", "John Doe", "John Doe");
-		hashTrieCase("Hello John Doe Jr !", "John Doe", "John Doe");
-		hashTrieCase("Hello John Doe Jr !", "John Doe Jr", "John Doe", "John Doe Jr");
-		hashTrieCase("Hello John Doe Jr !", "John Doe Jr", "John Doe Jr");
-		hashTrieCase("Hello John Doe Jr II !", "John Doe Jr", "John Doe", "John Doe Jr");
-		hashTrieCase("Hello John Doe Jr II !", "John Doe Jr", "John Doe", "John Doe Jr", "John", "John Bar");
-		hashTrieCase("", null, "John Doe", "John Doe Jr II");
-		hashTrieCase("Hello Mark Doe Jr II !", null, "John Doe", "John Doe Jr", "John Doe Jr II");
-		hashTrieCase("Hello John Doe Jr II !", "John Doe Jr II", "John Doe", "John Doe Jr", "John Doe Jr II");
+		hashTrieCase(true, "Hello John Doe !", "John Doe", "John Doe");
+		hashTrieCase(true, "Hello John Doe Jr !", "John Doe", "John Doe");
+		hashTrieCase(true, "Hello John Doe Jr !", "John Doe Jr", "John Doe", "John Doe Jr");
+		hashTrieCase(true, "Hello John Doe Jr !", "John Doe Jr", "John Doe Jr");
+		hashTrieCase(true, "Hello John Doe Jr II !", "John Doe Jr", "John Doe", "John Doe Jr");
+		hashTrieCase(true, "Hello John Doe Jr II !", "John Doe Jr", "John Doe", "John Doe Jr", "John", "John Bar");
+		hashTrieCase(true, "", null, "John Doe", "John Doe Jr II");
+		hashTrieCase(true, "Hello Mark Doe Jr II !", null, "John Doe", "John Doe Jr", "John Doe Jr II");
+		hashTrieCase(true, "Hello John Doe Jr II !", "John Doe Jr II", "John Doe", "John Doe Jr", "John Doe Jr II");
+		
+		// Case sensitive/insensitive test
+		hashTrieCase(true, "Hello John Doe !", null, "john doe");
+		hashTrieCase(true, "Hello John Doe !", null, "John doe");
+		hashTrieCase(true, "Hello John Doe !", null, "john Doe");
+		hashTrieCase(false, "Hello John Doe !", "john doe", "john doe");
+		hashTrieCase(false, "Hello John Doe !", "John doe", "John doe");
+		hashTrieCase(false, "Hello John Doe !", "John Doe", "John Doe");
+		hashTrieCase(false, "Hello John Doe !", null, "Jane Doe");
 	}
 	
 	@Test
 	public void testLongest() {
-		Trie t = new Trie(Arrays.asList(new Pattern("$Q Mr $S said"), new Pattern("$Q $S said")));
+		Trie t = new Trie(Arrays.asList(new Pattern("$Q Mr $S said"), new Pattern("$Q $S said")), true);
 		PatternMatcher pm = new TriePatternMatcher(t, 1, 5);
 		assertTrue(pm.match(buildSentence("*** Mr John Doe said .", "Test")));
 		List<Match> matches = pm.getMatches(true);

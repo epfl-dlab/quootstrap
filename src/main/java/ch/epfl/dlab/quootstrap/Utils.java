@@ -159,12 +159,19 @@ public class Utils {
 		return bestMatch;
 	}
 	
-	public static <T> List<T> findUniqueSuperstring(List<T> needle, Iterable<List<T>> haystack) {
-		List<T> bestMatch = null;
-		for (List<T> candidate : haystack) {
+	public static List<Token> findUniqueSuperstring(List<Token> needle,
+			Iterable<List<Token>> haystack, boolean caseSensitive) {
+		List<Token> bestMatch = null;
+		for (List<Token> candidate : haystack) {
 			for (int i = 0; i < candidate.size() - needle.size() + 1; i++) {
-				List<T> subCandidate = candidate.subList(i, i + needle.size());
-				if (subCandidate.equals(needle)) {
+				List<Token> subCandidate = candidate.subList(i, i + needle.size());
+				boolean equals;
+				if (caseSensitive) {
+					equals = subCandidate.equals(needle);
+				} else {
+					equals = equalsCaseInsensitive(subCandidate, needle);
+				}
+				if (equals) {
 					if (bestMatch != null) {
 						return null; // Conflict detected
 					}
@@ -175,6 +182,20 @@ public class Utils {
 		}
 
 		return bestMatch;
+	}
+	
+	private static boolean equalsCaseInsensitive(List<Token> a, List<Token> b) {
+		if (a.size() != b.size()) {
+			return false;
+		}
+		
+		for (int i = 0; i < a.size(); i++) {
+			if (!a.get(i).equalsIgnoreCase(b.get(i))) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	/**

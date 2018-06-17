@@ -27,25 +27,37 @@ public class StaticRules {
 			.replaceAll(" +", " "); // Remove double (or more) spaces
 	}
 	
-	public static <T> boolean matchSpeakerApprox(List<T> first, List<T> second) {
+	public static boolean matchSpeakerApprox(List<Token> first, List<Token> second,
+			boolean caseSensitive) {
 		if (second == null) {
 			return false;
+		}
+		if (!caseSensitive) {
+			first = Token.caseFold(first);
+			second = Token.caseFold(second);
 		}
 		// Return true if they have at least one token in common
 		return !Collections.disjoint(first, second);
 	}
 	
-	public static <T> Optional<List<T>> matchSpeakerApprox(List<T> first, Iterable<List<T>> choices) {
+	public static Optional<List<Token>> matchSpeakerApprox(List<Token> first,
+			Iterable<List<Token>> choices, boolean caseSensitive) {
 		// Return the match with the highest number of tokens in common
-		Optional<List<T>> bestMatch = Optional.empty();
+		Optional<List<Token>> bestMatch = Optional.empty();
 		int bestMatchLen = 0;
 		boolean dirty = false; // Used to track conflicts
-		for (List<T> choice : choices) {
+		for (List<Token> choice : choices) {
 			int matches = 0;
 			// O(n^2) loop, but it is fine since these lists are very small
 			for (int i = 0; i < choice.size(); i++) {
 				for (int j = 0; j < first.size(); j++) {
-					if (choice.get(i).equals(first.get(j))) {
+					boolean equals;
+					if (caseSensitive) {
+						equals = choice.get(i).equals(first.get(j));
+					} else {
+						equals = choice.get(i).equalsIgnoreCase(first.get(j));
+					}
+					if (equals) {
 						matches++;
 						break;
 					}
