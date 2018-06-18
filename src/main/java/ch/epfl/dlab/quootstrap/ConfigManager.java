@@ -40,6 +40,7 @@ public final class ConfigManager {
 	private final boolean intermediateEvaluationEnabled;
 	
 	private final boolean dumpPatternsEnabled;
+	private final boolean caseFoldingEnabled;
 	
 	private String outputPath;
 	
@@ -84,6 +85,7 @@ public final class ConfigManager {
 		intermediateEvaluationEnabled = prop.getProperty("ENABLE_INTERMEDIATE_EVALUATION").equals("true");
 		
 		dumpPatternsEnabled = prop.getProperty("DEBUG_DUMP_PATTERNS").equals("true");
+		caseFoldingEnabled = prop.getProperty("DEBUG_CASE_FOLDING").equals("true");
 		
 		outputPath = "";
 	}
@@ -150,6 +152,10 @@ public final class ConfigManager {
 
 	public boolean isDumpPatternsEnabled() {
 		return dumpPatternsEnabled;
+	}
+	
+	public boolean isCaseFoldingEnabled() {
+		return caseFoldingEnabled;
 	}
 
 	public boolean isMergingEnabled() {

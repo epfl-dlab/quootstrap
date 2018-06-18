@@ -1,9 +1,11 @@
 package ch.epfl.dlab.quootstrap;
 
+import java.io.Serializable;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.spark.api.java.JavaRDD;
@@ -13,7 +15,15 @@ import com.google.gson.Gson;
 
 import ch.epfl.dlab.spinn3r.EntryWrapper;
 
-public class Spinn3rDatasetLoader implements DatasetLoader {
+public class Spinn3rDatasetLoader implements DatasetLoader, Serializable {
+
+	private static final long serialVersionUID = 7689367526740335445L;
+	
+	private final boolean caseFold;
+	
+	public Spinn3rDatasetLoader() {
+		caseFold = ConfigManager.getInstance().isCaseFoldingEnabled();
+	}
 	
 	@Override
 	public JavaRDD<DatasetLoader.Article> loadArticles(JavaSparkContext sc, String datasetPath, Set<String> languageFilter) {
@@ -33,7 +43,12 @@ public class Spinn3rDatasetLoader implements DatasetLoader {
 			    	time = x.getDateFound();
 			    }
 			    
-			    return new Article(Long.parseLong(x.getIdentifier()), x.getContent(), domain, time);
+			    List<String> tokenizedContent = x.getContent();
+			    if (caseFold) {
+			    	tokenizedContent.replaceAll(token -> token.toLowerCase(Locale.ROOT));
+			    }
+			    
+			    return new Article(Long.parseLong(x.getIdentifier()), tokenizedContent, domain, time);
 			});
 	}
 	
