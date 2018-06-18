@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.regex.Matcher;
 
 /**
  * This class defines a pattern used for representing regular expressions.
@@ -176,9 +177,21 @@ public final class Pattern implements Serializable, Iterable<Token>, Comparable<
 		
 		String output = str.toString();
 		if (addConfidence && confidenceMetric >= 0) {
+			output = output.replace("\"", "\\\""); // Escape character
 			output = "[\"" + output + "\": " + confidenceMetric + "]";
 		}
 		return output;		
+	}
+	
+	public static Pattern parse(String input) {
+		java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("^\\[\\\"(.*)\": ([0-9.eE]+)\\]$");
+		Matcher m = pattern.matcher(input);
+		if (m.matches() && m.groupCount() == 2) {
+			String p = m.group(1).replace("\\\"", "\"");
+			double confidence = Double.parseDouble(m.group(2));
+			return new Pattern(p, confidence);
+		}
+		throw new IllegalArgumentException("Invalid pattern format: " + input);
 	}
 
 	@Override

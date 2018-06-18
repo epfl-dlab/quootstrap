@@ -314,6 +314,11 @@ public class QuotationExtraction {
 					Utils.dumpCollection(currentPatterns, "nextPatterns" + iter + ".txt");
 				}
 				
+				if (iter == numIterations - 2) {
+					// Export patterns
+					Utils.dumpCollection(oldPatterns, "discoveredPatterns.txt");
+				}
+				
 			}
 
 			sw.printTime();
@@ -423,7 +428,7 @@ public class QuotationExtraction {
 	public static List<Pattern> loadPatterns(String fileName) {
 		try {
 			return Files.readAllLines(Paths.get(fileName)).stream()
-				.map(x -> new Pattern(x, 1.0))
+				.map(x -> Pattern.parse(x))
 				.collect(Collectors.toCollection(ArrayList::new));
 		} catch (IOException e) {
 			throw new IllegalArgumentException(e);

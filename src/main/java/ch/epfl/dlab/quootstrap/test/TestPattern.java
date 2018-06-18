@@ -171,5 +171,39 @@ public class TestPattern {
 		assertEquals("John", matches.get(0).getSpeaker().get(0).toString());
 		assertEquals("Doe", matches.get(0).getSpeaker().get(1).toString());
 	}
+	
+	@Test
+	public void testParse() {
+		testCaseParse("$Q Mr $S said", 1.0);
+		testCaseParse("$Q Mr \" $S \" said", 0.5);
+		testCaseParse("$Q $S said", 0.0);
+		
+		Pattern p1 = new Pattern("$Q Mr $S said", 0.5);
+		assertEquals("[\"$Q Mr $S said\": 0.5]", p1.toString(true));
+		
+		Pattern p2 = new Pattern("$Q Mr \" $S said", 0.5);
+		assertEquals("[\"$Q Mr \\\" $S said\": 0.5]", p2.toString(true));
+		
+		Pattern p3 = Pattern.parse("[\"$Q Mr $S said\": 0.5]");
+		assertEquals("$Q Mr $S said", p3.toString(false));
+		assertEquals(0.5, p3.getConfidenceMetric(), 1e-4);
+		
+		Pattern p4 = Pattern.parse("[\"$Q Mr \\\" $S said\": 0.25]");
+		assertEquals("$Q Mr \" $S said", p4.toString(false));
+		assertEquals(0.25, p4.getConfidenceMetric(), 1e-4);
+		
+		Pattern p5 = Pattern.parse("$Q Mr $S said");
+		assertEquals("$Q Mr $S said", p5.toString(false));
+		
+		Pattern p6 = Pattern.parse("$Q Mr \\\" $S said");
+		assertEquals("$Q Mr \\\" $S said", p6.toString(false));
+	}
+	
+	private void testCaseParse(String pattern, double confidence) {
+		Pattern p = new Pattern(pattern, confidence);
+		String s = p.toString(true);
+		Pattern p2 = Pattern.parse(s);
+		assertEquals(p, p2);
+	}
 
 }
