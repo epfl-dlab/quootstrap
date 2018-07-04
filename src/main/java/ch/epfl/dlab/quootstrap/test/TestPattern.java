@@ -192,11 +192,13 @@ public class TestPattern {
 		assertEquals("$Q Mr \" $S said", p4.toString(false));
 		assertEquals(0.25, p4.getConfidenceMetric(), 1e-4);
 		
-		Pattern p5 = Pattern.parse("$Q Mr $S said");
+		Pattern p5 = new Pattern("$Q Mr $S said", 0.25);
 		assertEquals("$Q Mr $S said", p5.toString(false));
+		assertEquals("[\"$Q Mr $S said\": 0.25]", p5.toString(true));
 		
-		Pattern p6 = Pattern.parse("$Q Mr \\\" $S said");
+		Pattern p6 = new Pattern("$Q Mr \\\" $S said", 0.5);
 		assertEquals("$Q Mr \\\" $S said", p6.toString(false));
+		assertEquals("[\"$Q Mr \\\\\" $S said\": 0.5]", p6.toString(true));
 	}
 	
 	private void testCaseParse(String pattern, double confidence) {
