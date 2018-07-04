@@ -33,7 +33,7 @@ where `$1` represents the log/output directory. After tuning the settings to sui
 ## Setup
 To run our code, you need:
 - Java 8
-- Spark 1.6
+- Spark >= 2 (tested on 2.3.1). For Spark 1.6, we have [another branch](https://github.com/epfl-dlab/quootstrap/tree/spark-1.6).
 - The [ICWSM 2011 Spinn3r dataset](http://www.icwsm.org/data/)
 - Our dataset of people extracted from Freebase. You can download it from: https://drive.google.com/file/d/1fj4LxOE5T9WlNfW2tYycKi7ZYaJaOnXW/view
 
@@ -238,7 +238,7 @@ Remarks:
 - As in the example above, the full quotation might differ from the one(s) found in *occurrences* due to the quotation merging mechanism. We always report the longest (and most likely useful) quotation when multiple choices are possible.
 
 ## Adding support for new datasets/formats
-If you want to add support for other datasets/formats, you can provide a concrete implementation for the Java interface `DatasetLoader` and specify its full class name in the `NEWS_DATASET_LOADER` field of the configuration. For each article, you must supply a unique ID (int64/long), the website in which it can be found, and its content in tokenized format, i.e. as a list of strings. We provide an implementation for our JSON Spinn3r dataset in `ch.epfl.dlab.quootstrap.Spinn3rDatasetLoader`.
+If you want to add support for other datasets/formats, you can provide a concrete implementation for the Java interface `DatasetLoader` and specify its full class name in the `NEWS_DATASET_LOADER` field of the configuration. For each article, you must supply a unique ID (int64/long), the website in which it can be found, and its content in tokenized format, i.e. as a list of strings. We provide an implementation for our JSON Spinn3r dataset in `ch.epfl.dlab.quootstrap.Spinn3rDatasetLoader`, and for parquet dataframes in `ch.epfl.dlab.quootstrap.ParquetDatasetLoader`.
 
 ## Replacing the tokenizer
 If, for any reason (e.g. license, language other than English), you do not want to depend on Stanford PTBTokenizer, you can provide your own implementation of the `ch.epfl.dlab.spinn3r.Tokenizer` interface. You only have to implement two methods: `tokenize` and `untokenize`. Tokenization is one of the least critical steps in our pipeline, and does not impact the final result significantly.
