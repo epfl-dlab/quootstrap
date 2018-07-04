@@ -172,7 +172,7 @@ public class ContextExtractor {
 		List<Token> tokens = new ArrayList<>(s.getTokens());
 		
 		// Remove HTML tags
-		tokens.removeIf(x -> StaticRules.isHtmlTag(x.toString()));
+		tokens.removeIf(x -> x.getType() != Token.Type.QUOTATION && StaticRules.isHtmlTag(x.toString()));
 		
 		// Canonicalize quotation, and push out final punctuation marks, if present inside quotation
 		for (int i = 0; i < tokens.size(); i++) {
