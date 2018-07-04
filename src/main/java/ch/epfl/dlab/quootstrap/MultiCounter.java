@@ -4,19 +4,19 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.util.LongAccumulator;
 
 public class MultiCounter implements Serializable {
 
 	private static final long serialVersionUID = -5606791394577221239L;
 	
-	private final Map<String, Accumulator<Integer>> accumulators;
+	private final Map<String, LongAccumulator> accumulators;
 	
 	public MultiCounter(JavaSparkContext sc, String... counters) {
 		accumulators = new HashMap<>();
 		for (String counter : counters) {
-			accumulators.put(counter, sc.intAccumulator(0));
+			accumulators.put(counter, sc.sc().longAccumulator());
 		}
 	}
 	
@@ -24,7 +24,7 @@ public class MultiCounter implements Serializable {
 		accumulators.get(accumulator).add(1);
 	}
 	
-	public int getValue(String accumulator) {
+	public long getValue(String accumulator) {
 		return accumulators.get(accumulator).value();
 	}
 	

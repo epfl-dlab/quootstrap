@@ -13,11 +13,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.Optional;
+import org.apache.spark.util.LongAccumulator;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -82,10 +82,10 @@ public class GroundTruthEvaluator {
 		
 		Utils.dumpRDDLocal(errors, "errors" + iteration + ".txt");
 		
-		final Accumulator<Integer> labeledIncorrectly = sc.intAccumulator(0);
-		final Accumulator<Integer> labeledCorrectly = sc.intAccumulator(0);
-		final Accumulator<Integer> unlabeled = sc.intAccumulator(0);
-		final Accumulator<Integer> labeledWrong = sc.intAccumulator(0);
+		final LongAccumulator labeledIncorrectly = sc.sc().longAccumulator();
+		final LongAccumulator labeledCorrectly = sc.sc().longAccumulator();
+		final LongAccumulator unlabeled = sc.sc().longAccumulator();
+		final LongAccumulator labeledWrong = sc.sc().longAccumulator();
 		
 		JavaPairRDD<List<Token>, Tuple3<Integer, Integer, Integer>> partialResult = joinedRDD.mapToPair(x -> {
 				Optional<List<Token>> speakerReal = x._2._1.isPresent() ? Optional.of(x._2._1.get()._1) : Optional.absent();

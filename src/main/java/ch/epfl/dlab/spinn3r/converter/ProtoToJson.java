@@ -15,10 +15,10 @@ import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.hadoop.io.compress.CompressionCodec;
-import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.util.LongAccumulator;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -107,7 +107,7 @@ public class ProtoToJson {
 		
 		try (JavaSparkContext sc = new JavaSparkContext(conf)) {
 			// The accumulator is used to count the number of documents efficiently
-			final Accumulator<Integer> counter = sc.intAccumulator(0);
+			final LongAccumulator counter = sc.sc().longAccumulator();
 			
 			final boolean cleanFlag = clean;
 			final boolean tokenizeFlag = tokenize;
@@ -157,7 +157,7 @@ public class ProtoToJson {
 				out.saveAsTextFile(args[1]);
 			}
 			
-			int count = counter.value();
+			long count = counter.value();
 			System.out.println("Processed " + count + " documents");
 			double time = sw.printTime();
 			System.out.println((time / count * 1000) + " ms per document");
