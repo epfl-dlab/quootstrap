@@ -218,7 +218,7 @@ public abstract class EntryWrapperBuilder {
 		}
 	}
 	
-	private static String cleanContent(String contentHtml, String url) {
+	public static String cleanContent(String contentHtml, String url) {
 		Cleaner cleaner = new Cleaner(JSOUP_WHITELIST);
 		Document doc = Jsoup.parse(contentHtml, url);
 		doc = cleaner.clean(doc);
@@ -227,7 +227,7 @@ public abstract class EntryWrapperBuilder {
 		return doc.body().html();
 	}
 	
-	private static List<String> tokenize(String content) {
+	public static List<String> tokenize(String content) {
 		PTBTokenizer<CoreLabel> ptbt = new PTBTokenizer<>(new StringReader(content),
 				new CoreLabelTokenFactory(), TOKENIZER_SETTINGS);
 		List<String> tokens = new ArrayList<>();
