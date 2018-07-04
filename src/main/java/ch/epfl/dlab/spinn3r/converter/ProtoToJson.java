@@ -113,7 +113,7 @@ public class ProtoToJson {
 			final boolean tokenizeFlag = tokenize;
 			
 			JavaRDD<EntryWrapper> rdd = sc.binaryFiles(args[0]).mapPartitions(it -> {
-				return new IteratorWrapper<>(new CombinedDecoder(it, cleanFlag, tokenizeFlag));
+				return new CombinedDecoder(it, cleanFlag, tokenizeFlag);
 			});
 			
 			if (!allowedSources.isEmpty()) {

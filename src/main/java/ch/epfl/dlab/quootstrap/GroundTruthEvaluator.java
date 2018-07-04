@@ -17,8 +17,8 @@ import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.Optional;
 
-import com.google.common.base.Optional;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 

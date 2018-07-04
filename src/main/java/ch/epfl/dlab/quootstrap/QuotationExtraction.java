@@ -22,7 +22,6 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.broadcast.Broadcast;
 
 import ch.epfl.dlab.quootstrap.Dawg.Node;
-import ch.epfl.dlab.spinn3r.converter.IteratorWrapper;
 import ch.epfl.dlab.spinn3r.converter.Stopwatch;
 import scala.Tuple2;
 import scala.Tuple3;
@@ -101,7 +100,7 @@ public class QuotationExtraction {
 							results.add(new Tuple2<>(s.getArticleUid(), Token.getTokens(pm.getLongestMatch())));
 						}
 					}
-					return results;
+					return results.iterator();
 				})
 				.distinct()
 				.groupByKey(), "speakers-" + ConfigManager.getInstance().getLangSuffix());
@@ -116,7 +115,7 @@ public class QuotationExtraction {
 					.map(x -> x._2)
 					.mapPartitions(it -> {
 						PatternMatcher mt = new TriePatternMatcher(broadcastTrie.value(), minSpeakerLength, maxSpeakerLength);
-						return new IteratorWrapper<>(new TupleExtractor(it, mt));
+						return new TupleExtractor(it, mt);
 					});
 
 				// (quotation, (speaker, tuple confidence))
@@ -192,7 +191,7 @@ public class QuotationExtraction {
 							}
 						}
 						// (quotation, speaker, sentence, pattern)
-						return out;
+						return out.iterator();
 					});
 				
 				JavaPairRDD<String, Tuple2<List<Token>, LineageInfo>> pairs = matchedPairs
@@ -284,7 +283,7 @@ public class QuotationExtraction {
 				List<Tuple2<Pattern, Integer>> nextPatterns = remainingSentences
 					.mapPartitions(it -> {
 						PatternMatcher mt = new TriePatternMatcher(broadcastNextTrie.value(), minSpeakerLength, maxSpeakerLength);
-						return new IteratorWrapper<>(new TupleExtractor(it, mt));
+						return new TupleExtractor(it, mt);
 					})
 					.mapToPair(x -> new Tuple2<>(x._1(), new Tuple2<>(x._4(), x._2())))
 					.join(allPairs) //i.e. previous pairs -> result tuple (quotation, ((pattern, extractedSpeaker), actualSpeaker))
@@ -389,7 +388,7 @@ public class QuotationExtraction {
 		
 		JavaRDD<Sentence> allSentences = getConcreteDatasetLoader().loadArticles(sc,
 				ConfigManager.getInstance().getDatasetPath(), langSet)
-			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()));
+			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()).iterator());
 			
 		if (postProcess) {
 			allSentences = allSentences.map(ContextExtractor::postProcess);
@@ -454,14 +453,14 @@ public class QuotationExtraction {
 						output.add(new Tuple2<>(new Hashed(String.join(" ", tokens.subList(i, i + size))), hx));
 					}
 				}
-				return output;
+				return output.iterator();
 			})
 			.groupByKey()
 			.flatMapToPair(x -> {
 				List<Hashed> s = new ArrayList<>();
 				x._2.forEach(s::add);
 				if (s.size() == 1) {
-					return Collections.emptyList();
+					return Collections.emptyIterator();
 				}
 				
 				List<Tuple2<Hashed, Hashed>> output = new ArrayList<>();
@@ -471,7 +470,7 @@ public class QuotationExtraction {
 						output.add(new Tuple2<>(sent, longest));
 					}
 				}
-				return output;
+				return output.iterator();
 			})
 			.reduceByKey((x, y) -> x.compareTo(y) == 1 ? x : y);
 		

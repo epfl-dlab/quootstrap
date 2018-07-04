@@ -55,7 +55,7 @@ public class Exporter {
 		// Reconstruct quotations (from the lower-case canonical form to the full form)
 		return QuotationExtraction.getConcreteDatasetLoader().loadArticles(sc,
 				ConfigManager.getInstance().getDatasetPath(), langSet)
-			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()))
+			.flatMap(x -> ContextExtractor.extractQuotations(x.getArticleContent(), x.getArticleUID()).iterator())
 			.mapToPair(x -> new Tuple2<>(StaticRules.canonicalizeQuotation(x.getQuotation()), x.getQuotation()))
 			.reduceByKey((x, y) -> {
 				// Out of multiple possibilities, get the longest quotation
